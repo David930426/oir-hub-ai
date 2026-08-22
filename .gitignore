@@ -1,0 +1,61 @@
+# ---- Secrets ----
+.env
+.env.local
+.env.*.local
+!.env.example
+
+# ---- Python ----
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+build/
+dist/
+*.egg-info/
+.eggs/
+
+# ---- Virtual environments ----
+.venv/
+venv/
+env/
+ENV/
+
+# ---- Jupyter ----
+.ipynb_checkpoints/
+*/.ipynb_checkpoints/*
+profile_default/
+ipython_config.py
+
+# ---- Model / embedding caches ----
+.cache/
+huggingface/
+.huggingface/
+models/
+*.bin
+*.safetensors
+*.onnx
+
+# ---- Local vector store data (self-hosted Qdrant) ----
+qdrant_storage/
+qdrant_data/
+storage/
+
+# ---- Tooling ----
+.mypy_cache/
+.pytest_cache/
+.ruff_cache/
+.ipython/
+
+# ---- Editors / OS ----
+.vscode/
+.idea/
+*.swp
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# ---- Logs & scratch ----
+*.log
+tmp/
+scratch/
