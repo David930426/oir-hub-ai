@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>OIR Document Router</title>
+  <style>
+    body { font-family: system-ui, sans-serif; max-width: 720px; margin: 40px auto; padding: 0 20px; }
+    h1 { font-size: 22px; }
+    .box { border: 1px solid #ddd; border-radius: 10px; padding: 20px; margin-top: 16px; }
+    button { padding: 8px 16px; border-radius: 6px; border: 1px solid #333; background: #333; color: #fff; cursor: pointer; }
+    .verdict { font-size: 24px; font-weight: 700; margin-bottom: 8px; }
+    .update { color: #b45309; }
+    .new { color: #047857; }
+    .match { border-top: 1px solid #eee; padding-top: 10px; margin-top: 10px; font-size: 14px; }
+    .excerpt { color: #555; white-space: pre-wrap; }
+    .score { font-family: monospace; }
+  </style>
+</head>
+<body>
+  <h1>OIR Document Router</h1>
+  <p>Upload an incoming document to see whether it updates an existing one or should become a new bulletin.</p>
+
+  <div class="box">
+    <input type="file" id="file" accept=".txt,.md">
+    <button onclick="check()">Check document</button>
+  </div>
+
+  <div id="result"></div>
+
+<script>
+async function check() {
+  const input = document.getElementById('file');
+  const out = document.getElementById('result');
+  if (!input.files.length) { out.innerHTML = '<p>Pick a file first.</p>'; return; }
+
+  out.innerHTML = '<p>Checking…</p>';
+  const fd = new FormData();
+  fd.append('file', input.files[0]);
+
+  const res = await fetch('/api/check', { method: 'POST', body: fd });
+  const data = await res.json();
+
+  const cls = data.decision === 'UPDATE' ? 'update' : 'new';
+  const target = data.target_file ? ` → <code>${data.target_file}</code>` : '';
+
+  out.innerHTML = `
+    <div class="box">
+      <div class="verdict ${cls}">${data.decision}${target}</div>
+      <div>Top score: <span class="score">${data.top_score}</span>
+           (threshold ${data.threshold})</div>
+      ${data.matches.map(m => `
+        <div class="match">
+          <strong>${m.source_file}</strong> — <span class="score">${m.score}</span>
+          <div class="excerpt">${m.excerpt}</div>
+        </div>`).join('')}
+    </div>`;
+}
+</script>
+</body>
+</html>
