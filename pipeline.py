@@ -17,7 +17,7 @@ CHUNK_OVERLAP = 200
 SEPARATORS = ["\n\n", "\n", "。", "!", "?", ";", ". ", "! ", "? ", "; ", " ", ""]
 
 # Above this score the incoming document is considered a revision of an existing one.
-UPDATE_THRESHOLD = 0.85
+UPDATE_THRESHOLD = 0.83
 
 client = QdrantClient(url=os.getenv("QDRANT_URL"), api_key=os.getenv("QDRANT_API_KEY"))
 model = SentenceTransformer(EMBED_MODEL)
