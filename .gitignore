@@ -59,3 +59,7 @@ desktop.ini
 *.log
 tmp/
 scratch/
+
+# ---- Experiment: cached scrape (re-fetchable) ----
+experiment/data/raw/
+experiment/runs/*/raw/
