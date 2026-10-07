@@ -8,7 +8,10 @@ compares it with the bulletins posted before it, and answers UPDATE / NEW / REDU
     python experiment/run.py experiment/data/labels_oir_DG.csv --no-llm     # baselines only (seconds)
     python experiment/run.py kappa experiment/data/labels_oir_A.csv experiment/data/labels_oir_B.csv
 
-Output goes to experiment/runs/<timestamp>/: results.md, predictions.csv, errors.csv.
+Output goes to experiment/runs/<timestamp>/:
+    results.md       a plain-language summary (% correct, why wrong, conclusion), then every table
+    predictions.csv  every answer of every method, each marked CORRECT or WRONG with the reason
+    errors.csv       only the wrong answers, with the AI's own rationale
 """
 
 import argparse
@@ -16,6 +19,7 @@ import csv
 import datetime as dt
 import json
 import random
+import shutil
 from collections import Counter, defaultdict
 
 import numpy as np
@@ -49,6 +53,141 @@ def split(cases, gold):
         dev += group[:k]
         test += group[k:]
     return dev, test
+
+
+# Every answer is one of these. "Correct" means the right label and, for UPDATE, the right old
+# bulletin too - retiring the wrong document is still a wrong answer for the office.
+OUTCOMES = {
+    "correct_update": "correct UPDATE (right old bulletin)",
+    "correct_new": "correct NEW",
+    "correct_redundant": "correct REDUNDANT",
+    "false_update": "false UPDATE (said UPDATE, really NEW)",
+    "missed_update": "missed UPDATE (really UPDATE, said NEW/REDUNDANT)",
+    "wrong_target": "wrong target (UPDATE, but wrong old bulletin)",
+    "other": "other (REDUNDANT mixed up with NEW/UPDATE)",
+}
+
+
+def outcome(gold_label, gold_target, label, target):
+    if label == gold_label:
+        if label != "UPDATE":
+            return f"correct_{label.lower()}"
+        return "correct_update" if target_hit(target, gold_target) else "wrong_target"
+    if label == "UPDATE" and gold_label == "NEW":
+        return "false_update"
+    if gold_label == "UPDATE":
+        return "missed_update"
+    return "other"
+
+
+def explain(gold_label, gold_target, label, target):
+    """One line a person can read: what the method said, what the answer key says, verdict."""
+    said = f"{label} {target or ''}".strip()
+    key = f"{gold_label} {gold_target or ''}".strip()
+    o = outcome(gold_label, gold_target, label, target)
+    return ("CORRECT" if o.startswith("correct") else f"WRONG ({OUTCOMES[o].split(' (')[0]})") + \
+        f": said {said}; answer key {key}"
+
+
+def pct(n, total):
+    return f"{100 * n / total:.1f}% ({n})" if total else "–"
+
+
+def summary(methods, rows, y, yt, sig_results, labels_path):
+    """The plain-language part at the top of results.md: percentages, averages, conclusion."""
+    n = len(y)
+    out = []
+    w = out.append
+    w("## Summary in plain words\n")
+    if "draft" in str(labels_path):
+        w("> These scores use the **draft** answer key, so treat them as practice numbers.\n")
+    w(f"Every method answered the same **{n} test questions**. An answer counts as **correct** when the label "
+      "matches the answer key and, for UPDATE, it also names the right old bulletin. Percentages are out of "
+      f"all {n} questions. \"Right label\" ignores which old bulletin was named.\n")
+
+    counts = {}
+    for m in methods:
+        counts[m.name] = Counter(outcome(g, gt, l, t) for g, gt, l, t in
+                                 zip(y, yt, rows[m.name]["yp"], rows[m.name]["tp"]))
+
+    w("### How often each method was right\n")
+    w("| method | ✅ correct | ❌ wrong | right label (ignoring the old bulletin) | correct UPDATE | correct NEW | correct REDUNDANT |")
+    w("|---|---|---|---|---|---|---|")
+    groups = {"rules (B1–B4)": [], "AI (M1–M4)": []}
+    for m in methods:
+        c = counts[m.name]
+        right = sum(v for k, v in c.items() if k.startswith("correct"))
+        label_right = sum(g == l for g, l in zip(y, rows[m.name]["yp"]))
+        w(f"| {m.name} | **{pct(right, n)}** | {pct(n - right, n)} | {pct(label_right, n)} | {pct(c['correct_update'], n)} | "
+          f"{pct(c['correct_new'], n)} | {pct(c['correct_redundant'], n)} |")
+        if m.name[:2] in ("B1", "B2", "B3", "B4"):
+            groups["rules (B1–B4)"].append(right)
+        elif m.name.startswith("M"):
+            groups["AI (M1–M4)"].append(right)
+    for g, vals in groups.items():
+        if vals:
+            avg = sum(vals) / len(vals)
+            w(f"| *average of {g}* | *{100 * avg / n:.1f}%* | *{100 * (n - avg) / n:.1f}%* | | | | |")
+    w("")
+
+    w("### Why the wrong answers were wrong\n")
+    w("Each column is the share of all questions that went wrong in that way; the last column is the most "
+      "common mistake as a share of that method's mistakes.\n")
+    kinds = ["false_update", "missed_update", "wrong_target", "other"]
+    w("| method | " + " | ".join(OUTCOMES[k].split(" (")[0] for k in kinds) + " | most common mistake |")
+    w("|---|" + "---|" * (len(kinds) + 1))
+    for m in methods:
+        c = counts[m.name]
+        wrong = sum(c[k] for k in kinds)
+        top = max(kinds, key=lambda k: c[k])
+        top_txt = f"{OUTCOMES[top].split(' (')[0]}: {100 * c[top] / wrong:.0f}% of its mistakes" if wrong else "–"
+        w(f"| {m.name} | " + " | ".join(pct(c[k], n) for k in kinds) + f" | {top_txt} |")
+    w("")
+    w("*false UPDATE* = said UPDATE but it is really NEW (fooled by a look-alike) · *missed UPDATE* = it really "
+      "replaces an old bulletin but the method said NEW/REDUNDANT · *wrong target* = said UPDATE correctly but "
+      "named the wrong old bulletin · *other* = REDUNDANT confused with NEW or UPDATE.\n")
+
+    # conclusion, generated from the numbers above
+    right = {m.name: sum(v for k, v in counts[m.name].items() if k.startswith("correct")) for m in methods}
+    f1 = {m.name: rows[m.name]["f1"] for m in methods}
+    best_acc = max(right, key=right.get)
+    best_f1 = max(f1, key=f1.get)
+    real = [k for k in right if not k.startswith("B0")] or list(right)
+    worst = min(real, key=right.get)
+    w("### Conclusion\n")
+    if any(m.name.startswith("B0") for m in methods):
+        b0 = next(m.name for m in methods if m.name.startswith("B0"))
+        b0_label = sum(g == l for g, l in zip(y, rows[b0]["yp"]))
+        w(f"- **The bar to beat:** always answering UPDATE ({b0}) already gets the label right {pct(b0_label, n)} "
+          "of the time, because most test questions are UPDATEs - but it never names which old bulletin, so it is "
+          "fully correct 0% of the time. A method is only useful if it clearly beats this; macro-F1 is the fairer "
+          "score because it also rewards getting NEW and REDUNDANT right.")
+    w(f"- **Most often right:** {best_acc}, {pct(right[best_acc], n)} correct.")
+    w(f"- **Best on the main score (macro-F1):** {best_f1}, {f1[best_f1]:.3f}." +
+      (" Same method as above." if best_f1 == best_acc else ""))
+    w(f"- **Least often right (not counting B0):** {worst}, {pct(right[worst], n)} correct.")
+    for m in methods:
+        c = counts[m.name]
+        wrong = sum(c[k] for k in kinds)
+        if m.name in (best_acc, best_f1) and wrong:
+            top = max(kinds, key=lambda k: c[k])
+            w(f"- **Main weakness of {m.name}:** {OUTCOMES[top]} - {100 * c[top] / wrong:.0f}% of its mistakes.")
+    if sig_results:
+        base = sig_results[0][1]
+        w(f"- **AI vs rules** - each AI setup is compared with **{base}**, the rule that scored best on the "
+          "*practice* questions (chosen there so the comparison is not picked after seeing the test). "
+          "\"Significant\" means p < 0.05 after correcting for the several comparisons:")
+    for name, base, p_adj, diff, mc in sig_results:
+        ai, rule = right[name], right[base]
+        if p_adj < 0.05:
+            verdict = "significantly **more** often correct" if mc["b_only"] > mc["a_only"] \
+                else "significantly **less** often correct"
+        else:
+            verdict = "**not significantly different** in how often it is correct"
+        w(f"  - {name}: {verdict} ({pct(ai, n)} vs {pct(rule, n)}, p = {p_adj:.3f}). "
+          f"On macro-F1 the difference is {diff:+.3f}.")
+    w("")
+    return out
 
 
 def fmt(x, d=3):
@@ -101,7 +240,12 @@ def evaluate(args):
     run = C.EXP / "runs" / f"{dt.datetime.now():%Y%m%d_%H%M%S}"
     run.mkdir(parents=True)
     report(run, args, cases, dev, test, gold, sig, methods, preds)
+    # The newest results are always also in runs/latest/, so there is one obvious place to look.
+    latest = run.parent / "latest"
+    shutil.rmtree(latest, ignore_errors=True)
+    shutil.copytree(run, latest)
     print(f"-> {run}")
+    print(f"   newest results also in: {latest / 'results.md'}  (open it, then Ctrl+Shift+V for the preview)")
 
 
 def report(run, args, cases, dev, test, gold, sig, methods, preds):
@@ -116,6 +260,8 @@ def report(run, args, cases, dev, test, gold, sig, methods, preds):
     w(f"Input files (test): {kinds['attachment']} real attachments (PDF/Word), "
       f"{kinds['bulletin-md']} bulletins written as .md (no readable attachment).\n")
     w(f"Labels: `{args.labels}` · cases: {len(cases)} · dev {len(dev)} / test {len(test)} · seed {SEED}\n")
+    summary_at = len(L)
+    sig_results = []
     w("## Class distribution\n")
     w("| split | " + " | ".join(LABELS) + " |\n|---|" + "---|" * len(LABELS))
     for name, part in [("dev", dev), ("test", test)]:
@@ -183,6 +329,7 @@ def report(run, args, cases, dev, test, gold, sig, methods, preds):
         for (m, mc, d), p_adj in zip(tests, adj):
             w(f"| {m.name} | {mc['a_only']} | {mc['b_only']} | {mc['p']:.4f} | {p_adj:.4f} | "
               f"{d['diff']:+.3f} [{d['ci'][0]:+.2f}, {d['ci'][1]:+.2f}] |")
+            sig_results.append((m.name, best.name, p_adj, d["diff"], mc))
         w("")
 
     w("## Tuned parameters (from dev)\n")
@@ -250,6 +397,7 @@ def report(run, args, cases, dev, test, gold, sig, methods, preds):
                                  "notes": notes, "rationale": preds[m.name][i][2].get("rationale", "")})
         w(f"| {m.name} | {fu} | {mu} | {wt} | {trap} / {rew} |")
 
+    L[summary_at:summary_at] = summary(methods, rows, y, yt, sig_results, args.labels)
     (run / "results.md").write_text("\n".join(L), encoding="utf-8")
     with (run / "errors.csv").open("w", encoding="utf-8-sig", newline="") as f:
         if err_rows:
@@ -258,13 +406,16 @@ def report(run, args, cases, dev, test, gold, sig, methods, preds):
             wr.writerows(err_rows)
     with (run / "predictions.csv").open("w", encoding="utf-8-sig", newline="") as f:
         wr = csv.writer(f)
-        wr.writerow(["case_id", "split", "gold", "gold_target", "condition", "pred", "pred_target", "info"])
+        wr.writerow(["case_id", "split", "condition", "result", "gold", "gold_target", "pred", "pred_target",
+                     "title", "info"])
+        title_of = {c["case_id"]: c["query"]["title"] for c in test}
         split_of = {c["case_id"]: "dev" for c in dev}
         split_of.update({c["case_id"]: "test" for c in test})
         for m in methods:
             for i in ids:
                 p = preds[m.name][i]
-                wr.writerow([i, split_of[i], gold[i]["label"], gold[i]["target"], m.name, p[0], p[1] or "",
+                wr.writerow([i, split_of[i], m.name, explain(gold[i]["label"], gold[i]["target"], p[0], p[1]),
+                             gold[i]["label"], gold[i]["target"], p[0], p[1] or "", title_of[i],
                              json.dumps(p[2], ensure_ascii=False)])
 
 

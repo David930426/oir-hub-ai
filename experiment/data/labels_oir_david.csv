@@ -1,0 +1,201 @@
+﻿case_id,gold_label,gold_target,changed_field,notes,annotator,seconds
+oir-001,NEW,,,unsure | title says tuition fees but the body announces a Fulbright info session; a session is a separate event from the Fulbright call,david,195
+oir-002,UPDATE,oir-931|oir-835,cycle,2025 edition of the yearly Temple University dual-degree info session; replaces the 2024 session,david,25
+oir-003,UPDATE,oir-589,cycle,old_predecessor | 112 edition of the MOE Slavic-language summer camp scholarship; replaces the 109 edition,david,37
+oir-004,UPDATE,oir-903|oir-798|oir-443,cycle,2025 spring round of the international buddy volunteer recruitment; replaces the 2024 fall round,david,26
+oir-005,NEW,,,template_trap | lecture no. 30 of the MOE cross-cultural ambassador series is a different lecture from no. 29,david,28
+oir-006,UPDATE,oir-598,cycle,110 edition of the Hualien county international affairs youth training; replaces the 109 edition,david,28
+oir-007,UPDATE,oir-1073|oir-1068,,unsure | a specific TaiwanGPS session (disabled-student session) rather than the series announcement,david,4297
+oir-008,UPDATE,oir-1018,cycle,2025 Konkuk University summer program; replaces the 2024 summer post,david,23
+oir-009,UPDATE,oir-332,cycle,old_predecessor | 2020 fall UMAP Program A/B call replaces the previous UMAP Program A/B call,david,10
+oir-010,UPDATE,oir-1121,cycle,115 Young Fei Global training camp call replaces the 114 edition,david,5
+oir-011,NEW,,,template_trap | Olympia Summer Academy is a different program from the IOA postgraduate seminar,david,8
+oir-012,NEW,,,new MOE host-family website; the 2014 post was a different host-family training course,david,14
+oir-013,UPDATE,oir-553|oir-452|oir-231|oir-151,,results list (award winners) for the mainland-student scholarship; results are new information,david,108
+oir-014,UPDATE,oir-719,cycle,111 edition of the MOE humanities and social sciences talent program replaces the 110 edition,david,6
+oir-015,UPDATE,oir-193|oir-121,,a new staff job opening; each vacancy is a separate posting,david,35
+oir-016,NEW,,,University of Belize English-course scholarship; earlier UB posts are faculty programs,david,4
+oir-017,UPDATE,oir-980|oir-595,cycle,2025 spring exchange selection call replaces the 2024 fall call,david,38
+oir-018,NEW,,,admission results for mainland summer programs; results are new information,david,15
+oir-019,UPDATE,oir-1221|oir-1059|oir-924|oir-796|oir-508|oir-455,cycle,116 edition of the MOE humanities and social sciences talent program replaces the 115 edition,david,46
+oir-020,UPDATE,oir-874,cycle,2023 fall UMAP exchange selection replaces the 2023 spring call with the same title,david,19
+oir-021,UPDATE,oir-972,cycle,2025 Ochanomizu University summer program replaces the 2024 post,david,24
+oir-022,UPDATE,oir-521,cycle,ICU master/PhD scholarship call for the next intake replaces the 2018 call,david,25
+oir-023,REDUNDANT,oir-944,,unsure | empty body; same title and same 2024 fiscal year as the Japan Foundation post from October 2023,david,7
+oir-024,UPDATE,oir-112,cycle,old_predecessor | 108 Korean-language study scholarship replaces the 103 edition,david,9
+oir-025,NEW,,,second-round selection results; results are new information,david,64
+oir-026,UPDATE,oir-824,cycle,113 Czech short-term study scholarship replaces the 112 edition,david,12
+oir-027,UPDATE,oir-512,cycle,ACUCA staff mobility scheme for spring 2021 replaces the 2018 ACUCA staff exchange call,david,2
+oir-028,UPDATE,oir-1006|oir-881,cycle,reworded | 2025 Tottori University (online) summer program replaces the 2024 Tottori summer post,david,12
+oir-029,UPDATE,oir-739,cycle,2023 LSE Taiwan alumni award call replaces the 2022 call,david,8
+oir-030,UPDATE,oir-755|oir-598,cycle,111 edition of the Hualien county youth training replaces the 110 edition,david,8
+oir-031,UPDATE,oir-1179|oir-1033|oir-893,cycle,2026 Higher Education Sprout mobility grant call replaces the 2025 call,david,28
+oir-032,NEW,,,2016 international month lecture series; no earlier post about it,david,137
+oir-033,UPDATE,oir-1081,cycle,school-selection session schedule for the 2025 fall round replaces the one for the 2025 spring round,david,10
+oir-034,NEW,,,Gadjah Mada master's program; no earlier post about it,david,8
+oir-035,UPDATE,oir-902,cycle,2024 Ludwigshafen summer school replaces the 2023 post,david,9
+oir-036,NEW,,,University of Queensland application info session; no earlier post about it,david,29
+oir-037,UPDATE,oir-536,,admission list for the Peking University summer camp; results are new information,david,91
+oir-038,NEW,,,"unsure | Tokai University (Japan) summer program call; the knowledge base only holds a 2015 results list, not an earlier call",david,7
+oir-039,UPDATE,oir-242,deadline,deadline extension for the 2016 fall mainland exchange call,david,9
+oir-040,UPDATE,oir-199,cycle,reworded unsure | 2017-2018 UB visiting teacher program looks like the next round of the UB Fellows program from 2015,david,95
+oir-041,UPDATE,oir-223,cycle,old_predecessor | 108 edition of the MOE study-abroad promotion session replaces the 104 edition,david,5
+oir-042,UPDATE,oir-860,cycle,2026 LSE Taiwan alumni award call replaces the 2023 call,david,4
+oir-043,UPDATE,oir-360|oir-388,cycle,"unsure | corrected 2018 mainland summer camp call; the original 2018 post is not in the feed, so it replaces the 2017 summer camp calls",david,16
+oir-044,NEW,,,admission list for one mainland summer camp; results are new information,david,30
+oir-045,UPDATE,oir-759,cycle,new semester's round of the Ghent virtual conversation rooms replaces the fall 2021 round,david,6
+oir-046,NEW,,,University of the Ryukyus RETI forum call for papers; no earlier post about it,david,7
+oir-047,UPDATE,oir-929,cycle,UMAP 113 seminar replaces the UMAP 112 seminar,david,3
+oir-048,UPDATE,oir-1236,cycle,reworded unsure | fall-intake round of the foreign student scholarship follows the spring-intake round of the same scholarship,david,9
+oir-049,NEW,,,unsure | long-term (master/PhD) JTEA scholarship call; the knowledge base only holds an info session and the short-term scholarship,david,14
+oir-050,UPDATE,oir-1010,cycle,114 MOFA NGO internship call replaces the 113 edition,david,20
+oir-051,UPDATE,oir-180|oir-105,cycle,2016 spring buddy volunteer recruitment replaces the 2015 fall round,david,81
+oir-052,NEW,,,second-round results for the English/Japanese exchange selection; results are new information,david,41
+oir-053,UPDATE,oir-903,cycle,2024 fall buddy volunteer recruitment replaces the 2024 spring round,david,4
+oir-054,NEW,,,admission list for the East Asia student exchange; results are new information,david,13
+oir-055,UPDATE,oir-871,cycle,reworded | 113 Hualien international affairs youth training replaces the 112 edition; title dropped the county name,david,4
+oir-056,UPDATE,oir-229,cycle,2016 fall ACUCA Handong exchange call replaces the 2016 spring call,david,39
+oir-057,UPDATE,oir-1151|oir-1075|oir-1003|oir-928|oir-874,cycle,fall 2025 UMAP exchange selection replaces the spring 2025 call with the same title,david,18
+oir-058,UPDATE,oir-295|oir-256,cycle,2017 UMAP Program A/B call replaces the 2016 UMAP exchange calls,david,41
+oir-059,UPDATE,oir-539,other,next school-selection stage of the same 2019 fall round replaces the second-stage notice,david,10
+oir-060,UPDATE,oir-1148,cycle,2026 CYC student delegation to Japan replaces the 2025 edition,david,6
+oir-061,NEW,,,Taoyuan youth internship and overseas visit program; no earlier post about it,david,30
+oir-062,UPDATE,oir-784,cycle,112-1 MOE international competition subsidy replaces the 2022 call,david,2
+oir-063,UPDATE,oir-752,cycle,2023 Japan Foundation grant programs replace the 2022 edition,david,86
+oir-064,UPDATE,oir-853,cycle,113 OCAC overseas youth program replaces the 112 edition,david,5
+oir-065,UPDATE,oir-1075,cycle,spring 2025 UMAP exchange selection replaces the fall 2024 call with the same title,david,19
+oir-066,UPDATE,oir-556,cycle,2020 spring buddy volunteer interview schedule replaces the 2019 fall schedule,david,0
+oir-067,UPDATE,oir-588,cycle,111 Czech short-term study scholarship replaces the 109 edition,david,0
+oir-068,NEW,,,admission list for the 2020 fall buddy volunteers; results are new information,david,0
+oir-069,UPDATE,oir-221,cycle,"reworded template_trap | 2017-2018 UB faculty enrichment program replaces the 2015 UB English enrichment call, not the UB visiting teacher program",david,1
+oir-070,NEW,,,MOST South America research delegation; no earlier post about it,david,1
+oir-071,UPDATE,oir-376,deadline,"unsure | extension of the 2018 third-stage mainland summer camp call; the original 2018 post is missing, so it replaces the 2017 third-stage call",david,15
+oir-072,UPDATE,oir-403,cycle,new application round of the New Southbound youth study program replaces the June 2017 call,david,0
+oir-073,UPDATE,oir-888,cycle,reworded | 2024 PSB Paris School of Business summer school replaces the 2023 post,david,0
+oir-074,UPDATE,oir-304,cycle,"template_trap | 2017 spring Chinese-camp volunteer recruitment replaces the 2016 summer Chinese-camp one, not the buddy program",david,1
+oir-075,UPDATE,oir-775,cycle,reworded unsure | 2023 Higher Education Sprout mobility grant (renumbered sub-project 1-4) replaces the 2022 call (sub-project 2-4),david,22
+oir-076,NEW,,,template_trap | lectures 24 and 25 of the cross-cultural ambassador series are different lectures from 22 and 23,david,1
+oir-077,NEW,,,admission list for one mainland summer camp; results are new information,david,10
+oir-078,UPDATE,oir-528,cycle,new application round of the mainland-student scholarship replaces the 2019 call,david,10
+oir-079,NEW,,,template_trap | Waseda summer session; the other 2017 summer programs are at different schools,david,0
+oir-080,UPDATE,oir-564,cycle,109 MOE government scholarship exam replaces the 108 edition,david,1
+oir-081,NEW,,other,unsure | another online info session for the Temple ACT summer program in the same year; new session date,david,13
+oir-082,UPDATE,oir-585,cycle,2020 fall buddy volunteer interview schedule replaces the 2020 spring schedule,david,9
+oir-083,UPDATE,oir-1167,cycle,2026 overseas Chinese student scholarship round replaces the 2025 round,david,0
+oir-084,UPDATE,oir-256,cycle,next UMAP Program A exchange call replaces the 105-1 UMAP call,david,0
+oir-085,UPDATE,oir-796,cycle,113 edition of the MOE humanities and social sciences talent program replaces the 112 edition,david,0
+oir-086,UPDATE,oir-200,cycle,UMAP 105-1 exchange call replaces the 104-2 call,david,0
+oir-087,UPDATE,oir-1189,cycle,115 MOE EU scholarship call replaces the 114 edition,david,0
+oir-088,NEW,,,Ministry of Culture Southeast Asia exchange grant (Jade program); no earlier post about it,david,0
+oir-089,UPDATE,oir-833,cycle,113 Slavic-language summer camp scholarship replaces the 112 edition,david,0
+oir-090,UPDATE,oir-368,deadline,third stage of the 2017 mainland summer camp selection is a new application window following the second stage,david,0
+oir-091,NEW,,,second-round results for the 2018 fall mainland exchange; results are new information,david,0
+oir-092,NEW,,,ICU summer Japanese program; no earlier post about it,david,0
+oir-093,UPDATE,oir-799,cycle,unsure | new session of the Toyo University business Japanese online course follows the November 2022 on-demand course,david,9
+oir-094,NEW,,,a new staff job opening; each vacancy is a separate posting,david,0
+oir-095,UPDATE,oir-994,cycle,2025 Yonsei summer school replaces the 2024 post,david,0
+oir-096,UPDATE,oir-596,cycle,111 MOFA NGO internship call replaces the 109 edition,david,1
+oir-097,NEW,,,"unsure | empty body, slogan-only title; nothing in the knowledge base matches",david,6
+oir-098,NEW,,,news report of a delegation visit; each visit is a separate event,david,0
+oir-099,NEW,,,admission results for the Peking University summer school; results are new information,david,0
+oir-100,NEW,,,a new staff job opening; each vacancy is a separate posting,david,0
+oir-101,UPDATE,oir-249|oir-242,deadline,second selection round for 2016 fall mainland exchange reopens the same call with a new deadline,david,7
+oir-102,UPDATE,oir-879,cycle,113 MOFA NGO internship call replaces the 112 edition,david,0
+oir-103,NEW,,,UNSW 3+1+X promotion at an education fair; the older UNSW posts are about the pre-program selection,david,0
+oir-104,UPDATE,oir-758,cycle,interview schedule for the 2022 fall round replaces the one for the 2022 spring round,david,0
+oir-105,UPDATE,oir-1124,cycle,2026 Ochanomizu University summer program replaces the 2025 post,david,0
+oir-106,UPDATE,oir-842,cycle,113 Polish government scholarship replaces the 112 edition,david,0
+oir-107,NEW,,,template_trap | Kwansei Gakuin summer program; the Kansai Gaidai posts are a different school,david,0
+oir-108,NEW,,,admission list for the Tottori summer program; results are new information,david,0
+oir-109,UPDATE,oir-1188,cycle,2026 first-term JTEA short-term scholarship (deadline extended) replaces the 2025 call,david,0
+oir-110,UPDATE,oir-576,cycle,109-2 MOE international competition subsidy replaces the 108-2 call,david,0
+oir-111,NEW,,,template_trap | a different Airlangga University online event from the Jean Monnet and competition posts,david,0
+oir-112,NEW,,,award announcement for the overseas Chinese student scholarship; results are new information,david,0
+oir-113,NEW,,,Taipei City youth international development grant; no earlier post about it,david,0
+oir-114,UPDATE,oir-1089,cycle,2026 Konkuk University winter program replaces the previous winter post,david,0
+oir-115,UPDATE,oir-1180,cycle,2026 Ryukoku University summer program replaces the 2025 post,david,0
+oir-116,UPDATE,oir-1000,cycle,2025 Kansai Gaidai online summer program replaces the 2024 post,david,0
+oir-117,NEW,,,news report of a delegation visit; each visit is a separate event,david,0
+oir-118,UPDATE,oir-459,cycle,108 OCAC overseas youth program replaces the 107 edition,david,0
+oir-119,UPDATE,oir-154,cycle,2015 fall buddy volunteer interview schedule replaces the 2015 spring schedule,david,0
+oir-120,REDUNDANT,oir-1091,,unsure | the same Taipei City youth international development grant rules re-announced three months later,david,10
+oir-121,UPDATE,oir-179,cycle,old_predecessor | 108 Mataisah indigenous youth program replaces the 104 edition,david,5
+oir-122,UPDATE,oir-744,cycle,fall 2022 round of the Ghent virtual conversation rooms replaces the spring 2022 round,david,0
+oir-123,UPDATE,oir-738,cycle,school-selection notice for the 2023 fall round replaces the one for the 2022 fall round,david,0
+oir-124,NEW,,,template_trap | Toyo University summer camp is a different program from its winter camp,david,0
+oir-125,NEW,,,grant results for the Higher Education Sprout mobility call; results are new information,david,0
+oir-126,UPDATE,oir-995,cycle,2025 Hanyang summer school replaces the 2024 post,david,0
+oir-127,UPDATE,oir-335,cycle,107 Taiwan-Latin America cultural exchange grant replaces the previous call,david,0
+oir-128,UPDATE,oir-1021,cycle,114 MOE EU scholarship call replaces the 113 edition,david,0
+oir-129,NEW,,,results of the 2016 fall long-term exchange selection; results are new information,david,0
+oir-130,UPDATE,oir-600,cycle,school-selection schedule for the 2021 spring round replaces the one for the 2020 fall round,david,0
+oir-131,REDUNDANT,oir-828,,the same Georgia State University summer program post re-published three days later,david,0
+oir-132,UPDATE,oir-358,cycle,2018 spring mainland exchange experience-sharing session replaces the 2017 session,david,0
+oir-133,UPDATE,oir-523,cycle,109 Taiwan-Latin America cultural exchange grant replaces the 108 edition,david,0
+oir-134,UPDATE,oir-431,cycle,interview order for the 2018 fall mainland selection replaces the one for 2018 spring,david,0
+oir-135,NEW,,,template_trap | a French business school lecture about emlyon; no earlier lecture in this series is in the knowledge base,david,0
+oir-136,UPDATE,oir-1177,cycle,114-2 MOE international competition subsidy replaces the 114-1 call,david,0
+oir-137,UPDATE,oir-831,cycle,2024 ELTE summer school replaces the 2023 Budapest summer school post,david,0
+oir-138,UPDATE,oir-922,cycle,2024 Hokusei Gakuen EASCOM program replaces the 2023 Hokusei program post,david,0
+oir-139,UPDATE,oir-999,cycle,2025 CYC student delegation to Japan replaces the 2024 edition,david,0
+oir-140,UPDATE,oir-395,cycle,109 youth international experiential learning program replaces the 106 edition,david,0
+oir-141,UPDATE,oir-1122,cycle,115 Czech short-term study scholarship replaces the 114 edition,david,0
+oir-142,UPDATE,oir-590,cycle,112 OCAC overseas youth program replaces the 109 edition,david,0
+oir-143,NEW,,,admission list for the Dalian summer camp; results are new information,david,0
+oir-144,UPDATE,oir-438,cycle,new round of the mainland-student scholarship replaces the October 2017 call,david,0
+oir-145,UPDATE,oir-461,cycle,reworded | 2019 mainland summer camp selection replaces the 2018 mainland summer camp call,david,0
+oir-146,UPDATE,oir-424,cycle,2018 fall mainland exchange experience-sharing session replaces the 2018 spring session,david,0
+oir-147,UPDATE,oir-1207,cycle,spring 2026 UMAP exchange selection replaces the fall 2025 call with the same title,david,0
+oir-148,UPDATE,oir-421,cycle,2018 fall mainland long-term exchange call replaces the 2018 spring first-round call,david,0
+oir-149,NEW,,,admission results for the Northeast Forestry University winter camp; results are new information,david,0
+oir-150,UPDATE,oir-848,cycle,new application round of the Xuehai Xizhu scholarship replaces the February 2023 call,david,1
+oir-151,REDUNDANT,oir-938,,unsure | empty body; same 112-2 competition subsidy call as the October 2023 post,david,8
+oir-152,UPDATE,oir-938,cycle,113-1 MOE international competition subsidy replaces the 112-2 call,david,0
+oir-153,UPDATE,oir-508,cycle,109 edition of the MOE humanities and social sciences talent program replaces the 108 edition,david,6
+oir-154,NEW,,,admission results for the Dalian summer camp; results are new information,david,0
+oir-155,UPDATE,oir-353,deadline,second selection round for 2017 fall mainland exchange reopens the February 2017 call with a new deadline,david,0
+oir-156,UPDATE,oir-372,deadline,added third application round of the New Southbound youth study program replaces the March 2017 call,david,0
+oir-157,REDUNDANT,oir-822,,unsure | fuller re-announcement of the same 112 OCAC overseas youth program already posted in January 2023,david,16
+oir-158,NEW,,,template_trap | lecture no. 28 of the cross-cultural ambassador series is a different lecture from 24-27,david,0
+oir-159,UPDATE,oir-1077,cycle,2025 FPT University Hello Vietnam camp replaces the 2024 edition,david,0
+oir-160,UPDATE,oir-231,,award list for the mainland-student scholarship; results are new information,david,14
+oir-161,REDUNDANT,oir-950,,unsure | empty body; same UTAR Future Leaders Forum as the November 2023 post,david,2
+oir-162,NEW,,,STEKOM online cultural exchange; no earlier post about it,david,0
+oir-163,UPDATE,oir-431,cycle,interview order for the second 2018 spring mainland selection replaces the first-round interview order,david,11
+oir-164,UPDATE,oir-1064,cycle,2026 ACUCA summer online micro-degree replaces the 2024 summer edition,david,0
+oir-165,UPDATE,oir-478,cycle,2019 spring buddy volunteer recruitment replaces the 2018 fall round,david,0
+oir-166,UPDATE,oir-1090,cycle,2026 Kwansei Gakuin exchange info session replaces the October 2024 session,david,0
+oir-167,UPDATE,oir-883,cycle,2024 JTEA short-term scholarship replaces the 2023 call,david,0
+oir-168,UPDATE,oir-1219,cycle,2026/2027 Slovak national scholarship call replaces the October 2025 call,david,0
+oir-169,UPDATE,oir-430,cycle,interview times for the 2019 global exchange selection replace the 2018 ones,david,0
+oir-170,UPDATE,oir-467,cycle,interview order for the 2019 spring mainland selection replaces the 2018 fall one,david,0
+oir-171,UPDATE,oir-333,cycle,reworded | Musashino University master's program call replaces the 2017 graduate-school recommendation call,david,0
+oir-172,NEW,,,Indonesian Darmasiswa short-term scholarship; no earlier post about it,david,0
+oir-173,UPDATE,oir-971,cycle,2025 Seinan Gakuin summer program replaces the 2024 post,david,0
+oir-174,UPDATE,oir-710,cycle,111 MOE government scholarship exam replaces the 109 edition,david,0
+oir-175,UPDATE,oir-892,cycle,2024 Rennes School of Business summer school replaces the 2023 post,david,0
+oir-176,UPDATE,oir-320,cycle,2017 New Southbound youth study program call replaces the October 2016 call,david,0
+oir-177,UPDATE,oir-527,cycle,Kwansei Gakuin master/PhD call for the next intake replaces the 2019 master's call,david,0
+oir-178,UPDATE,oir-1056,cycle,2025 Hiroshima University summer program replaces the 2024 post,david,0
+oir-179,UPDATE,oir-1243,cycle,2026 fall buddy volunteer recruitment replaces the 2026 spring round,david,0
+oir-180,UPDATE,oir-793,cycle,2024 Japan Foundation grant programs replace the 2023 edition,david,0
+oir-181,UPDATE,oir-1066,cycle,reworded | 2027 University of Belize RLC English scholarship replaces the 2024 Belize English-course scholarship call,david,0
+oir-182,UPDATE,oir-852,cycle,113 MOE EU scholarship call replaces the 112 edition,david,0
+oir-183,UPDATE,oir-461|oir-368,deadline,second stage of the 2018 mainland summer camp selection follows the 2018 first-stage call,david,0
+oir-184,UPDATE,oir-599,cycle,interview schedule for the 2021 spring round (with a changed date) replaces the 2020 fall schedule,david,0
+oir-185,UPDATE,oir-819,cycle,reworded | 2025 ACUCA winter online micro-degree replaces the Winter 2023 edition,david,0
+oir-186,UPDATE,oir-1026,cycle,reworded | 2025 University of Calgary summer program replaces the 2024 Calgary summer post (different transliteration),david,0
+oir-187,NEW,,,OCAC donated scholarships for overseas Chinese students; no earlier post about it,david,0
+oir-188,NEW,,,template_trap | lectures 26 and 27 of the cross-cultural ambassador series are different lectures from 24 and 25,david,0
+oir-189,UPDATE,oir-194,cycle,2016 spring buddy volunteer interview schedule replaces the 2015 fall schedule,david,0
+oir-190,UPDATE,oir-316,cycle,106 mainland-student scholarship call replaces the 2016 call,david,0
+oir-191,UPDATE,oir-825,cycle,2024 Ochanomizu University summer program replaces the 2023 post,david,0
+oir-192,UPDATE,oir-1034,cycle,2025 JTEA short-term scholarship replaces the 2024 call,david,0
+oir-193,UPDATE,oir-142,cycle,2015 fall buddy volunteer recruitment replaces the 2015 spring round,david,0
+oir-194,NEW,,,second-round results for the 2016 fall mainland exchange; results are new information,david,0
+oir-195,UPDATE,oir-809,cycle,reworded | 2024 MCI Innsbruck summer school replaces the 2022 MCI post,david,0
+oir-196,NEW,,,3rd AUN-TEPL symposium hosted by Universiti Malaya; no earlier post about it,david,0
+oir-197,UPDATE,oir-1129,cycle,2026 spring exchange selection brochure replaces the 2025 fall one,david,0
+oir-198,NEW,,,India VAJRA visiting researcher program; no earlier post about it,david,0
+oir-199,NEW,,,foreign student spring-intake scholarship; no earlier post about it,david,0
+oir-200,UPDATE,oir-1027,cycle,114 Polish government scholarship replaces the 113 edition,david,2938
