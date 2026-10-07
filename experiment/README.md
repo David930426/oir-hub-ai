@@ -2,6 +2,7 @@
 
 Research design: [PLAN.md](PLAN.md). Labeling rules: [RUBRIC.md](RUBRIC.md).
 Plain-language walkthrough of every file: [docs/OIR-Experiment-File-Guide.pdf](../docs/OIR-Experiment-File-Guide.pdf).
+How to fill the answer page, with screenshots: [docs/Labeling-Guide.pdf](../docs/Labeling-Guide.pdf).
 
 **The task:** you have a document (PDF, Word, .txt or .md). Compare it with every OIR bulletin
 posted before it and decide whether it is an **UPDATE** of one of them (and which), something

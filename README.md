@@ -23,6 +23,7 @@ oir-hub-ai/
 |---|---|
 | `experiment/` | [experiment/README.md](experiment/README.md), then [PLAN.md](experiment/PLAN.md) and [RUBRIC.md](experiment/RUBRIC.md) |
 | `docs/` | [OIR-Experiment-File-Guide.pdf](docs/OIR-Experiment-File-Guide.pdf): what every experiment file does, step by step |
+| | [Labeling-Guide.pdf](docs/Labeling-Guide.pdf): how to fill the answer page, with screenshots |
 | `app/` | the section below |
 
 ## Prerequisites
