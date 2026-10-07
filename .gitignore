@@ -63,6 +63,8 @@ scratch/
 # ---- Experiment: everything here can be regenerated ----
 # scraped HTML (scrape_oir.py re-fetches it)
 experiment/data/raw/
+# downloaded test input files (fetch_files.py re-downloads them; files_manifest.jsonl is kept)
+experiment/data/files/
 # embeddings, signals, cached LLM answers
 experiment/data/cache/
 # Excel copy of oir_news.jsonl

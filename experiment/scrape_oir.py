@@ -30,6 +30,9 @@ HEADER = re.compile(
 )
 BODY = re.compile(r'<div class="page-content">(.*?)<ul class="list-group">', re.S)
 LINK = re.compile(r'<a[^>]+href="([^"]+)"[^>]*>(.*?)</a>', re.S)
+# The attachment box under the body: "/download.php?dir=news&filename=<hash>.pdf&title=<label>"
+ATTACH_BOX = re.compile(r'<ul class="list-group">(.*?)</ul>', re.S)
+SITE = "https://oir.thu.edu.tw"
 
 
 def fetch(sn):
@@ -71,7 +74,23 @@ def parse(sn, page):
             for h, t in LINK.findall(body_html)
             if not h.startswith(("mailto:", "javascript:"))
         ],
+        "attachments": attachments(page),
     }
+
+
+def attachments(page):
+    """Files in the attachment box, with their extension. Links to other sites in the same box
+    (registration pages, Google Forms) are not attachments and are left out."""
+    box = ATTACH_BOX.search(page)
+    out = []
+    for h, t in LINK.findall(box.group(1) if box else ""):
+        h = html.unescape(h)
+        if "download.php" not in h:
+            continue
+        ext = re.search(r"filename=[^&]*?\.(\w+)(&|$)", h)
+        out.append({"url": SITE + h if h.startswith("/") else h, "label": to_text(t),
+                    "ext": ext.group(1).lower() if ext else ""})
+    return out
 
 
 def main(lo=1, hi=1350):

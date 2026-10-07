@@ -79,10 +79,12 @@ overwrites it instead of duplicating it.
 
 ## The experiment (`experiment/`)
 
-It answers one question: can a small local LLM (Qwen3-4B) decide UPDATE / NEW / REDUNDANT
-better than simple rules? The test set is 200 real bulletins scraped from oir.thu.edu.tw,
-and the experiment compares 5 rule baselines with 4 LLM setups, using significance tests.
-Everything is in [experiment/README.md](experiment/README.md).
+You give it a document (PDF, Word, .txt or .md). It finds the related OIR bulletins and decides
+whether the document is an UPDATE of one of them, something NEW, or REDUNDANT, and can update
+the library accordingly (`check_doc.py --apply`). The 專題 part measures how accurately this is
+done: 200 test files (bulletin attachments, or bulletins written as .md) are compared with
+the 1,164 scraped bulletins, and 5 rule baselines are compared with 4 LLM setups using significance
+tests. Everything is in [experiment/README.md](experiment/README.md).
 
 ## Prototype (`prototype/`)
 

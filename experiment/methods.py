@@ -1,4 +1,7 @@
-"""The conditions under comparison. Each maps a case to (label, target, info).
+"""The conditions under comparison. Each maps a case to (label, target doc_id, info).
+
+A case is an input document (case["query"]: title, text, date) and its signals against the
+library (see `signals`). The same code serves the experiment (run.py) and daily use (check_doc.py).
 
 Baselines have free thresholds; `tune(dev)` picks them by grid search on the dev split ONLY,
 then `predict` is applied unchanged to test. LLM methods have nothing to tune except the
@@ -9,13 +12,14 @@ few-shot exemplars, which also come from dev.
     B2  e5 cosine of the nearest KB doc, two thresholds
     B3  BM25 (normalised) of the nearest KB doc, two thresholds
     B4  bge-reranker-v2-m3 probability over the top-10 cosine candidates, two thresholds
-    M1  LLM, incoming doc only (no KB)
+    M1  LLM, input document only (no library)
     M2  LLM + top-5 cosine candidates   <- what the OIR Hub router does
     M3  M2 + one dev exemplar per class
     M4  cascade: confident deterministic rule, otherwise M2
 """
 
 import difflib
+import hashlib
 import json
 import pickle
 import time
@@ -35,79 +39,87 @@ TOP_LLM = 5
 
 
 # ---------------------------------------------------------------- per-case signals
+#
+# A case is an input document - case["query"] = {"title", "text", "date"} - to be compared with
+# the library documents dated before it. Everything a method needs is computed here once and
+# stored by doc_id, so the methods never look anything up in the library themselves.
 
 def _ratio(a, b):
     return difflib.SequenceMatcher(None, a, b, autojunk=False).ratio()
 
 
-def compute_signals(case):
-    """Everything the cheap methods look at, computed once per case and cached."""
-    corpus, docs, idx = case["corpus"], C.load(case["corpus"]), C.index(case["corpus"])
-    i = idx[case["doc_id"]]
-    doc, kb = docs[i], C.kb_indices(corpus, docs[i])
+def compute_signals(query, lib, qvec):
+    docs = lib.docs
+    # Documents already replaced by a newer one (check_doc --apply) are not the current version,
+    # so they are not offered as candidates. The experiment's library has none.
+    kb = [i for i in lib.before(query["date"]) if not docs[i].get("replaced_by")]
     if not kb:
-        return {"i": i, "kb_size": 0}
+        return {"kb_size": 0}
+    ids = [docs[i]["doc_id"] for i in kb]
 
-    cos = C.cosine_scores(corpus, i, kb)
-    bm = C.bm25_scores(corpus, i, kb)
-    by_cos = [kb[j] for j in np.argsort(-cos)]
-    by_bm = [kb[j] for j in np.argsort(-bm)]
+    cos = lib.vectors[kb] @ qvec
+    bm = lib.bm25.scores(C.tokens(f"{query['title']}\n{query['text']}"[:4000]))[kb]
+    by_cos = [ids[k] for k in np.argsort(-cos)[:50]]
 
-    nt = C.norm_title(doc["title"])
-    title_sim = [(_ratio(nt, C.norm_title(docs[j]["title"])), j) for j in kb] if nt else []
-    nb = C.norm_body(doc["text"])[:3000]
-    identical = [j for j in kb if nb and C.norm_body(docs[j]["text"])[:3000] == nb]
+    nt = C.norm_title(query["title"])
+    tsim = np.array([_ratio(nt, C.norm_title(docs[i]["title"])) if nt else 0.0 for i in kb])
+    title_sim = {ids[k]: float(tsim[k]) for k in np.flatnonzero(tsim >= 0.5)}
 
-    # Body similarity only for the few docs any method could name as the target.
-    shortlist = set(by_cos[:TOP_RERANK]) | {j for s, j in sorted(title_sim, reverse=True)[:5]}
-    body_sim = {j: _ratio(nb, C.norm_body(docs[j]["text"])[:3000]) for j in shortlist}
+    nb = C.norm_body(query["text"])[:3000]
+    identical = [ids[k] for k, i in enumerate(kb) if nb and C.norm_body(docs[i]["text"])[:3000] == nb]
 
+    # Body similarity only for documents a method could name as the target.
+    shortlist = set(by_cos[:TOP_RERANK]) | {d for d, t in title_sim.items() if t >= 0.7}
+    body_sim = {d: _ratio(nb, C.norm_body(docs[lib.index[d]]["text"])[:3000]) for d in shortlist}
+
+    keep = set(by_cos) | set(title_sim) | set(identical)
+    snippet = lambda d: {"title": d["title"], "date": d["date"], "url": d.get("url", ""),
+                         "text": d["text"][:CAND_CHARS]}
     return {
-        "i": i, "kb_size": len(kb),
-        "cos": dict(zip(kb, cos.tolist())), "bm25": dict(zip(kb, bm.tolist())),
-        "by_cos": by_cos[:50], "by_bm25": by_bm[:50],
-        "title_sim": {j: s for s, j in title_sim if s >= 0.5},
-        "identical": identical, "body_sim": body_sim,
+        "kb_size": len(kb),
+        "cos": dict(zip(ids, cos.tolist())), "bm25": dict(zip(ids, bm.tolist())),
+        "by_cos": by_cos, "title_sim": title_sim, "identical": identical, "body_sim": body_sim,
+        "docs": {d: snippet(docs[lib.index[d]]) for d in keep},
     }
 
 
-def add_rerank(case, sig, reranker):
-    if not sig.get("kb_size") or "rerank" in sig:
-        return
-    docs = C.load(case["corpus"])
+def add_rerank(query, sig, lib, reranker):
     cands = sig["by_cos"][:TOP_RERANK]
-    q = C.doc_text(docs[sig["i"]], 1500)
-    probs = reranker.predict([(q, C.doc_text(docs[j], 1500)) for j in cands],
+    q = f"{query['title']}\n{query['text']}"[:1500]
+    probs = reranker.predict([(q, C.doc_text(lib.docs[lib.index[d]], 1500)) for d in cands],
                              activation_fn=__import__("torch").nn.Sigmoid(), batch_size=8)
     sig["rerank"] = dict(zip(cands, map(float, probs)))
 
 
-def signals(cases, rerank=True):
-    """Signals for many cases, cached on disk per corpus."""
-    out = {}
-    for corpus in {c["corpus"] for c in cases}:
-        path = C.CACHE / f"signals_{corpus}.pkl"
-        cache = pickle.loads(path.read_bytes()) if path.exists() else {}
-        todo = [c for c in cases if c["corpus"] == corpus and c["case_id"] not in cache]
-        for c in todo:
-            cache[c["case_id"]] = compute_signals(c)
-        need = [c for c in cases if c["corpus"] == corpus
-                and cache[c["case_id"]].get("kb_size") and "rerank" not in cache[c["case_id"]]]
-        if rerank and need:
-            import torch
-            from sentence_transformers import CrossEncoder
-            dev = "cuda" if torch.cuda.is_available() else "cpu"
-            model = CrossEncoder("BAAI/bge-reranker-v2-m3", device=dev, max_length=512)
-            for c in need:
-                add_rerank(c, cache[c["case_id"]], model)
-            del model
-            if dev == "cuda":
-                torch.cuda.empty_cache()  # hand the VRAM back before Ollama needs it
-        if todo or need:
-            C.CACHE.mkdir(parents=True, exist_ok=True)
-            path.write_bytes(pickle.dumps(cache))
-        out.update({c["case_id"]: cache[c["case_id"]] for c in cases if c["corpus"] == corpus})
-    return out
+def signals(cases, lib, rerank=True, cache_name="signals_files"):
+    """Signals for many cases. Cached on disk, keyed by the input itself, so editing a file or
+    its date recomputes that case and nothing else. cache_name=None disables the cache."""
+    def key(c):
+        q = c["query"]
+        return hashlib.md5(f"{q['date']}|{q['title']}|{q['text']}".encode()).hexdigest()
+
+    path = C.CACHE / f"{cache_name}.pkl"
+    cache = pickle.loads(path.read_bytes()) if (cache_name and path.exists()) else {}
+    todo = [c for c in cases if key(c) not in cache]
+    if todo:
+        qvecs = C.query_vectors([f"{c['query']['title']}\n{c['query']['text']}" for c in todo])
+        for c, v in zip(todo, qvecs):
+            cache[key(c)] = compute_signals(c["query"], lib, v)
+    need = [c for c in cases if cache[key(c)].get("kb_size") and "rerank" not in cache[key(c)]]
+    if rerank and need:
+        import torch
+        from sentence_transformers import CrossEncoder
+        dev = "cuda" if torch.cuda.is_available() else "cpu"
+        model = CrossEncoder("BAAI/bge-reranker-v2-m3", device=dev, max_length=512)
+        for c in need:
+            add_rerank(c["query"], cache[key(c)], lib, model)
+        del model
+        if dev == "cuda":
+            torch.cuda.empty_cache()  # hand the VRAM back before Ollama needs it
+    if cache_name and (todo or need):
+        C.CACHE.mkdir(parents=True, exist_ok=True)
+        path.write_bytes(pickle.dumps(cache))
+    return {c["case_id"]: cache[key(c)] for c in cases}
 
 
 # ---------------------------------------------------------------- baselines
@@ -168,8 +180,8 @@ class Threshold(Method):
         self.t_upd, self.t_red = best[1]
 
     def predict(self, case, sig):
-        label, j = self.decide(sig, self.t_upd, self.t_red)
-        return label, _doc_id(case, j), {"t_upd": self.t_upd, "t_red": self.t_red}
+        label, d = self.decide(sig, self.t_upd, self.t_red)
+        return label, d, {"t_upd": self.t_upd, "t_red": self.t_red}
 
 
 class Cosine(Threshold):
@@ -191,18 +203,14 @@ class Metadata(Method):
     name = "B1 metadata/title"
 
     def decide(self, case, sig, t_title, t_body):
-        docs = C.load(case["corpus"])
+        date = lambda d: sig["docs"][d]["date"]
         if sig.get("identical"):
-            return R, max(sig["identical"], key=lambda j: docs[j]["date"])
-        matches = [j for j, s in (sig.get("title_sim") or {}).items() if s >= t_title]
+            return R, max(sig["identical"], key=date)
+        matches = [d for d, s in (sig.get("title_sim") or {}).items() if s >= t_title]
         if not matches:
             return N, None
-        j = max(matches, key=lambda j: (docs[j]["date"], sig["title_sim"][j]))
-        body = sig["body_sim"].get(j)
-        if body is None:
-            body = _ratio(C.norm_body(docs[sig["i"]]["text"])[:3000], C.norm_body(docs[j]["text"])[:3000])
-            sig["body_sim"][j] = body
-        return (R if body >= t_body else U), j
+        d = max(matches, key=lambda d: (date(d), sig["title_sim"][d]))
+        return (R if sig["body_sim"].get(d, 0.0) >= t_body else U), d
 
     def tune(self, dev, gold, sig):
         best = (-1, None)
@@ -215,12 +223,8 @@ class Metadata(Method):
         self.t_title, self.t_body = best[1]
 
     def predict(self, case, sig):
-        label, j = self.decide(case, sig, self.t_title, self.t_body)
-        return label, _doc_id(case, j), {"t_title": self.t_title, "t_body": self.t_body}
-
-
-def _doc_id(case, j):
-    return None if j is None else C.load(case["corpus"])[j]["doc_id"]
+        label, d = self.decide(case, sig, self.t_title, self.t_body)
+        return label, d, {"t_title": self.t_title, "t_body": self.t_body}
 
 
 # ---------------------------------------------------------------- LLM judge
@@ -270,12 +274,11 @@ def _render_doc(d, limit):
 
 
 def render_user(case, sig, with_kb=True, in_chars=IN_CHARS, cand_chars=CAND_CHARS):
-    docs = C.load(case["corpus"])
-    msg = f"INCOMING ANNOUNCEMENT\n{_render_doc(docs[sig['i']], in_chars)}"
+    msg = f"INCOMING ANNOUNCEMENT\n{_render_doc(case['query'], in_chars)}"
     if not with_kb:
         return msg, []
     cands = (sig.get("by_cos") or [])[:TOP_LLM]
-    blocks = [f"[C{k + 1}]\n{_render_doc(docs[j], cand_chars)}" for k, j in enumerate(cands)]
+    blocks = [f"[C{k + 1}]\n{_render_doc(sig['docs'][d], cand_chars)}" for k, d in enumerate(cands)]
     msg += "\n\nEXISTING DOCUMENTS (most similar first)\n" + ("\n\n".join(blocks) if blocks else "(none)")
     return msg, cands
 
@@ -357,8 +360,7 @@ class LLM(Method):
                     # Shorter than a real prompt: three full-length examples pushed the pilot
                     # to 14k tokens, and the 4B model started copying labels instead of reading.
                     user, cands = render_user(c, sig[c["case_id"]], self.with_kb, 600, 250)
-                    ids = [C.load(c["corpus"])[j]["doc_id"] for j in cands]
-                    tgt = next((f"C{k + 1}" for k, d in enumerate(ids) if d in str(g["target"]).split("|")), None)
+                    tgt = next((f"C{k + 1}" for k, d in enumerate(cands) if d in str(g["target"]).split("|")), None)
                     if label != N and tgt is None:
                         continue  # gold target not among the candidates - a confusing example
                     ans = {"rationale": why, "label": label,
@@ -382,7 +384,7 @@ class LLM(Method):
         target = None
         tgt = getattr(v, "target", None)
         if v.label != N and tgt and tgt != "NONE" and int(tgt[1:]) <= len(cands):
-            target = C.load(case["corpus"])[cands[int(tgt[1:]) - 1]]["doc_id"]
+            target = cands[int(tgt[1:]) - 1]
         return v.label, target, {**cost, "confidence": v.confidence, "rationale": v.rationale}
 
 
@@ -400,7 +402,7 @@ class Cascade(Method):
         if not sig.get("kb_size"):
             return N, None
         if sig.get("identical"):
-            return R, max(sig["identical"], key=lambda j: C.load(case["corpus"])[j]["date"])
+            return R, max(sig["identical"], key=lambda d: sig["docs"][d]["date"])
         top = max(sig["cos"].values())
         if self.t_new is not None and top < self.t_new:
             return N, None
@@ -421,7 +423,7 @@ class Cascade(Method):
     def predict(self, case, sig):
         r = self.rule(case, sig)
         if r is not None:
-            return r[0], _doc_id(case, r[1]), {"escalated": False}
+            return r[0], r[1], {"escalated": False}
         label, target, info = self.llm.predict(case, sig)
         return label, target, {**info, "escalated": True}
 

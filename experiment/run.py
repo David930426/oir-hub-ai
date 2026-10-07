@@ -1,11 +1,14 @@
 """Run every condition on the labeled cases and write the results.
 
-    python experiment/run.py oir data/labels_oir_DG.csv                 # the real experiment
-    python experiment/run.py oir data/labels_oir_DG.csv --no-llm        # baselines only (seconds)
-    python experiment/run.py local data/labels_local_DG.csv --smoke     # pilot: no split, NOT a result
-    python experiment/run.py kappa data/labels_oir_DG.csv data/labels_oir_XY.csv
+Each case's input is a FILE (data/files/, made by fetch_files.py): the bulletin's PDF/Word
+attachment, or the bulletin written out as .md when it has none. Each method reads the file,
+compares it with the bulletins posted before it, and answers UPDATE / NEW / REDUNDANT.
 
-Output goes to experiment/runs/<corpus>_<timestamp>/: results.md, predictions.csv, errors.csv.
+    python experiment/run.py experiment/data/labels_oir_DG.csv              # the real experiment
+    python experiment/run.py experiment/data/labels_oir_DG.csv --no-llm     # baselines only (seconds)
+    python experiment/run.py kappa experiment/data/labels_oir_A.csv experiment/data/labels_oir_B.csv
+
+Output goes to experiment/runs/<timestamp>/: results.md, predictions.csv, errors.csv.
 """
 
 import argparse
@@ -52,13 +55,31 @@ def fmt(x, d=3):
     return "–" if x is None or (isinstance(x, float) and np.isnan(x)) else f"{x:.{d}f}"
 
 
+def load_cases(gold):
+    """The labeled cases, each with its input file read in as case["query"]."""
+    if not C.MANIFEST.exists():
+        raise SystemExit("No input files yet - run: python experiment/fetch_files.py")
+    files = {json.loads(l)["case_id"]: json.loads(l) for l in C.MANIFEST.open(encoding="utf-8")}
+    cases = []
+    for line in (C.DATA / "cases_oir.jsonl").open(encoding="utf-8"):
+        c = json.loads(line)
+        if c["case_id"] not in gold:
+            continue
+        f = files[c["case_id"]]
+        title, text = C.read_file(C.DATA / f["file"])
+        c["query"] = {"title": title, "text": text, "date": c["date"]}
+        c["kind"] = "attachment" if f["kind"].startswith("attachment") else "bulletin-md"
+        c["file"] = f["file"]
+        cases.append(c)
+    return cases
+
+
 def evaluate(args):
-    cases = [json.loads(l) for l in (C.DATA / f"cases_{args.corpus}.jsonl").open(encoding="utf-8")]
     gold = read_labels(args.labels)
-    cases = [c for c in cases if c["case_id"] in gold]
-    sig = signals(cases, rerank=True)
+    cases = load_cases(gold)
+    sig = signals(cases, C.Library.load(), rerank=True)
     cases = [c for c in cases if sig[c["case_id"]].get("kb_size")]
-    dev, test = (cases, cases) if args.smoke else split(cases, gold)
+    dev, test = split(cases, gold)
     print(f"{len(cases)} labeled cases: dev {len(dev)}, test {len(test)}")
 
     methods = [m for m in all_methods() if not (args.no_llm and m.uses_llm)]
@@ -77,26 +98,23 @@ def evaluate(args):
         f = macro_f1([gold[c["case_id"]]["label"] for c in test], [out[c["case_id"]][0] for c in test])
         print(f"{m.name:24s} macro-F1 {f:.3f}")
 
-    run = C.EXP / "runs" / f"{args.corpus}_{dt.datetime.now():%Y%m%d_%H%M%S}"
+    run = C.EXP / "runs" / f"{dt.datetime.now():%Y%m%d_%H%M%S}"
     run.mkdir(parents=True)
     report(run, args, cases, dev, test, gold, sig, methods, preds)
     print(f"-> {run}")
 
 
 def report(run, args, cases, dev, test, gold, sig, methods, preds):
-    docs, idx = {}, {}
-    for corpus in {c["corpus"] for c in cases}:
-        docs[corpus], idx[corpus] = C.load(corpus), C.index(corpus)
     ids = [c["case_id"] for c in test]
     y = [gold[i]["label"] for i in ids]
     yt = [gold[i]["target"] for i in ids]
     L = []
     w = L.append
 
-    w(f"# Results — {args.corpus}  ({dt.datetime.now():%Y-%m-%d %H:%M})\n")
-    if args.smoke:
-        w("> **SMOKE RUN: dev = test = all cases. Thresholds are fit on the very cases they are scored on. "
-          "These numbers check that the code runs; they are not results.**\n")
+    w(f"# Results  ({dt.datetime.now():%Y-%m-%d %H:%M})\n")
+    kinds = Counter(c["kind"] for c in test)
+    w(f"Input files (test): {kinds['attachment']} real attachments (PDF/Word), "
+      f"{kinds['bulletin-md']} bulletins written as .md (no readable attachment).\n")
     w(f"Labels: `{args.labels}` · cases: {len(cases)} · dev {len(dev)} / test {len(test)} · seed {SEED}\n")
     w("## Class distribution\n")
     w("| split | " + " | ".join(LABELS) + " |\n|---|" + "---|" * len(LABELS))
@@ -112,7 +130,7 @@ def report(run, args, cases, dev, test, gold, sig, methods, preds):
     upd = [c for c in test if gold[c["case_id"]]["label"] != "NEW" and gold[c["case_id"]]["target"]]
     if upd:
         def rank_hit(c, k):
-            cands = [docs[c["corpus"]][j]["doc_id"] for j in sig[c["case_id"]]["by_cos"][:k]]
+            cands = sig[c["case_id"]]["by_cos"][:k]
             return any(target_hit(d, gold[c["case_id"]]["target"]) for d in cands)
         w(f"Gold target (UPDATE/REDUNDANT, n={len(upd)}) in e5 top-1: {np.mean([rank_hit(c, 1) for c in upd]):.2f}, "
           f"top-5: {np.mean([rank_hit(c, 5) for c in upd]):.2f}, top-10: {np.mean([rank_hit(c, 10) for c in upd]):.2f} "
@@ -174,6 +192,17 @@ def report(run, args, cases, dev, test, gold, sig, methods, preds):
             w(f"- {m.name}: " + ", ".join(f"{k}={v}" for k, v in params.items()))
     w("")
 
+    w("## Macro-F1 by input file type (test)\n")
+    w("| condition | attachment (PDF/Word) | bulletin-md |\n|---|---|---|")
+    for m in methods:
+        cells = []
+        for kind in ("attachment", "bulletin-md"):
+            sub = [k for k, c in enumerate(test) if c["kind"] == kind]
+            cells.append(f"{macro_f1([y[k] for k in sub], [rows[m.name]['yp'][k] for k in sub]):.2f} (n={len(sub)})"
+                         if sub else "–")
+        w(f"| {m.name} | " + " | ".join(cells) + " |")
+    w("")
+
     w("## Macro-F1 by sampling pool (test)\n")
     pools = sorted({c["pool"] for c in test})
     w("| condition | " + " | ".join(pools) + " |\n|---|" + "---|" * len(pools))
@@ -215,9 +244,9 @@ def report(run, args, cases, dev, test, gold, sig, methods, preds):
                 kind = f"{g.lower()}_as_{pl.lower()}"
             if kind:
                 c = test[k]
-                d = docs[c["corpus"]][idx[c["corpus"]][c["doc_id"]]]
                 err_rows.append({"condition": m.name, "case_id": i, "error": kind, "gold": g, "gold_target": yt[k],
-                                 "pred": pl, "pred_target": pt or "", "pool": c["pool"], "title": d["title"],
+                                 "pred": pl, "pred_target": pt or "", "pool": c["pool"], "input": c["kind"],
+                                 "file": c["file"], "title": c["query"]["title"],
                                  "notes": notes, "rationale": preds[m.name][i][2].get("rationale", "")})
         w(f"| {m.name} | {fu} | {mu} | {wt} | {trap} / {rew} |")
 
@@ -255,12 +284,14 @@ def agreement(args):
 
 if __name__ == "__main__":
     ap = argparse.ArgumentParser()
-    ap.add_argument("corpus", help="oir | local | kappa")
-    ap.add_argument("labels")
-    ap.add_argument("other", nargs="?", help="second annotator's CSV (kappa mode)")
-    ap.add_argument("--smoke", action="store_true", help="no dev/test split; pipeline check only")
+    ap.add_argument("labels", help="answer key CSV, or the word kappa to compare two annotators")
+    ap.add_argument("other", nargs="*", help="kappa mode: the two annotators' CSVs")
     ap.add_argument("--no-llm", action="store_true")
     ap.add_argument("--only", help="comma-separated condition codes, e.g. B2,M2")
     ap.add_argument("--boot", type=int, default=10_000)
     args = ap.parse_args()
-    agreement(args) if args.corpus == "kappa" else evaluate(args)
+    if args.labels == "kappa":
+        args.labels, args.other = args.other
+        agreement(args)
+    else:
+        evaluate(args)

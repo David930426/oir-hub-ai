@@ -1,11 +1,11 @@
 # 專題 plan — ingestion-time supersession detection
 
-Revised 2026-09-29. It replaces the data and annotation parts of the earlier plan. The research
+Revised 2026-09-29 (data and annotation) and 2026-10-07 (inputs are files). The research
 question, hypotheses, conditions and statistics are unchanged.
 
 ## Question
 
-When a new OIR announcement arrives, can a small local LLM judge (Qwen3-4B, Q4_K_M) decide
+When a new OIR document arrives - a PDF, Word, .txt or .md file - can a small local LLM judge (Qwen3-4B, Q4_K_M) decide
 **UPDATE / NEW / REDUNDANT**, and name the document being replaced, more accurately than
 metadata, cosine, BM25 and reranker thresholds? Does a cascade keep the LLM's accuracy at a
 fraction of its cost?
@@ -23,15 +23,22 @@ A null result (baselines ≈ LLM) is a valid finding: it says metadata + recency
 
 | Set | Source | Size | Role |
 |---|---|---|---|
-| **Main** | Public news posts at `oir.thu.edu.tw`, scraped by `scrape_oir.py` (Sn 1–1350, 2013–2026) | 1,295 posts → **200 sampled cases, ≥150 labeled** | dev / test |
-| **Pilot** | The 18 brochure PDFs in `data/` | 17 cases | code and prompt debugging only; never reported |
+| **Library** | Public news posts at `oir.thu.edu.tw`, scraped by `scrape_oir.py` (Sn 1–1350, 2013–2026) | 1,295 posts, 1,164 dated | what each input is compared against |
+| **Inputs** | One file per case (`fetch_files.py`): the bulletin's PDF/Word attachment, or the bulletin as `.md` if it has none | 200 cases: 61 attachments, 139 `.md`; ≥150 labeled | dev / test |
 
 **Why the public feed works:** OIR re-posts recurring programs every cycle (exchange selection
 rounds, Japan Foundation grants, JASSO, UMAP, partner summer schools). The same feed therefore
 contains real UPDATEs, real re-posts, and many same-template-but-different-program traps.
 
-**Case = chronological replay.** The incoming document is one post. Its knowledge base is every
-post dated strictly before it, which is exactly what the pipeline would have seen at the time.
+**Case = chronological replay.** The input is one file, dated like the bulletin it belongs to.
+It is compared with every bulletin dated strictly before it, which is exactly what the system
+would have seen at the time. The answer key is per case, so it holds for the file as for the
+bulletin: an attachment relates to the older bulletins exactly as its bulletin does.
+
+**Why files.** In use, staff hand the system a document (a brochure, a typed notice), not a
+finished bulletin. Attachments are the realistic input; `.md` files stand in for typed notices.
+OIR no longer hosts attachments from before about 2022 (the server returns empty files), so
+older cases use the `.md`. Results are reported for both input types separately.
 
 **Sampling** (`build_cases.py`). About 9 in 10 posts are NEW, so a purely random sample would
 contain almost no UPDATEs. Cases are drawn from three pools:
@@ -66,7 +73,7 @@ to validity. It is stated in the report and mitigated by the random pool.
 | B2 | e5 cosine, two thresholds | |
 | B3 | BM25, two thresholds | character bigrams, so no segmenter; avoids jieba's zh-TW weakness |
 | B4 | bge-reranker-v2-m3 over the cosine top-10, two thresholds | |
-| M1 | LLM, incoming document only | no target possible |
+| M1 | LLM, input file only | no target possible |
 | M2 | LLM + top-5 cosine candidates | the core LLM condition |
 | M3 | M2 + one dev exemplar per class | exemplar reasons come from the annotator's notes |
 | M4 | cascade: identical body → REDUNDANT, cosine below a dev-tuned cut → NEW, otherwise M2 | rules kept only if ≥ 0.9 precise on dev |
@@ -105,9 +112,11 @@ time allows, and it would give the "what we ship today" row.
 - Pool-based sampling favours cases where the signals are informative. The random pool is the
   unbiased slice.
 - Most cases are labeled by one annotator. κ covers 40 cases.
-- Post text only: attachments (PDF brochures) are not read. Some cases can only be judged from
-  the attachment; the annotator flags them `unsure`.
+- Only 61 of 200 inputs are real attachments; the rest are bulletins written as `.md`, which
+  are easier to match (same wording as the post). Compare the two input types, not just the total.
+- Labels were made by reading the bulletins; for an attachment that covers more or less than its
+  bulletin, the label may fit the file less well.
 - Q4_K_M on 8 GB may understate what Qwen3-4B can do.
-- Pilot observations (17 cases, not results): an Optional `target` field let the model answer
+- Pilot observations (17 brochure PDFs, not results; the pilot set has since been retired): an Optional `target` field let the model answer
   UPDATE without naming a document. Placeholder exemplar rationales made few-shot collapse.
   Both are fixed. They are worth a sentence in the method section, as design lessons.

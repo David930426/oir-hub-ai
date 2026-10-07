@@ -1,7 +1,9 @@
 """Sample the cases to label, and write the offline labeling page.
 
-    python experiment/build_cases.py oir     # main set  -> data/cases_oir.jsonl, labeling/annotate_oir.html
-    python experiment/build_cases.py local   # pilot set -> data/cases_local.jsonl, labeling/annotate_local.html
+    python experiment/build_cases.py     # -> data/cases_oir.jsonl, labeling/annotate_oir.html
+
+Already done: re-running it reproduces the same 200 cases (fixed seed), but only re-run it if you
+mean to start the labeling over. After it, fetch_files.py turns each case into an input file.
 
 Why pools and not a plain random sample: roughly 9 in 10 OIR posts are NEW, so 200 random
 posts would give a handful of UPDATEs and no hard negatives. Three pools instead:
@@ -17,9 +19,9 @@ and results are reported per pool as well as overall. The pools are defined by t
 of signal the baselines use; that bias is a threat to validity and is written up as one.
 """
 
+import difflib
 import json
 import random
-import sys
 
 import numpy as np
 
@@ -27,19 +29,21 @@ import corpus as C
 
 SEED = 13
 POOL_SIZES = {"title": 90, "semantic": 60, "random": 50}
-MIN_DATE = "2015-01-01"   # earlier posts have too little KB behind them to be interesting
+MIN_DATE = "2015-01-01"   # earlier posts have too little history behind them to be interesting
 N_CANDIDATES = 5          # per retrieval method, for the labeling view
 
 
-def pool_features(corpus):
-    """Cheap per-doc features: best title similarity and best cosine against the older KB."""
-    import difflib
-    docs = C.load(corpus)
-    q, p = C.embeddings(corpus)
-    titles = [C.norm_title(d["title"]) for d in docs]
+def bulletin_query_vectors(lib):
+    """Each bulletin embedded as a query, for comparing it with the ones before it."""
+    return C.query_vectors([C.doc_text(d) for d in lib.docs])
+
+
+def pool_features(lib, qvecs):
+    """Cheap per-bulletin features: best title similarity and best cosine against older ones."""
+    titles = [C.norm_title(d["title"]) for d in lib.docs]
     feats = []
-    for i, d in enumerate(docs):
-        kb = C.kb_indices(corpus, d)
+    for i, d in enumerate(lib.docs):
+        kb = lib.before(d["date"])
         if not kb:
             feats.append(None)
             continue
@@ -51,17 +55,13 @@ def pool_features(corpus):
                     sm.set_seq1(titles[j])
                     if sm.real_quick_ratio() > best_t and sm.quick_ratio() > best_t:
                         best_t = max(best_t, sm.ratio())
-        feats.append({"title": best_t, "cos": float((p[kb] @ q[i]).max())})
+        feats.append({"title": best_t, "cos": float((lib.vectors[kb] @ qvecs[i]).max())})
     return feats
 
 
-def sample(corpus):
-    docs = C.load(corpus)
-    if corpus == "local":
-        return [(i, "pilot") for i, d in enumerate(docs) if C.kb_indices(corpus, d)]
-
-    feats = pool_features(corpus)
-    elig = [i for i, d in enumerate(docs) if feats[i] and d["date"] >= MIN_DATE]
+def sample(lib, qvecs):
+    feats = pool_features(lib, qvecs)
+    elig = [i for i, d in enumerate(lib.docs) if feats[i] and d["date"] >= MIN_DATE]
     cos_hi = np.quantile([feats[i]["cos"] for i in elig], 0.8)
     pools = {
         "title": [i for i in elig if feats[i]["title"] >= 0.9],
@@ -82,14 +82,14 @@ def sample(corpus):
     return chosen
 
 
-def candidates(corpus, i):
+def candidates(lib, qvecs, i):
     """What the annotator sees: the union of several retrievers' top hits, ordered by date
     (newest first) rather than by any one method's score, so the view favours no method."""
-    docs = C.load(corpus)
-    kb = C.kb_indices(corpus, docs[i])
-    cos, bm = C.cosine_scores(corpus, i, kb), C.bm25_scores(corpus, i, kb)
+    docs = lib.docs
+    kb = lib.before(docs[i]["date"])
+    cos = lib.vectors[kb] @ qvecs[i]
+    bm = lib.bm25.scores(C.tokens(C.doc_text(docs[i], 4000)))[kb]
     nt = C.norm_title(docs[i]["title"])
-    import difflib
     tsim = np.array([difflib.SequenceMatcher(None, nt, C.norm_title(docs[j]["title"])).ratio() if nt else 0
                      for j in kb])
     pick = set()
@@ -98,27 +98,30 @@ def candidates(corpus, i):
     return sorted(pick, key=lambda j: docs[j]["date"], reverse=True)
 
 
-def main(corpus):
-    docs = C.load(corpus)
-    chosen = sample(corpus)
+def build():
+    lib = C.Library.load()
+    qvecs = bulletin_query_vectors(lib)
+    chosen = sample(lib, qvecs)
     random.Random(SEED + 1).shuffle(chosen)  # annotators must not see pool order
-    cases = []
-    for n, (i, pool) in enumerate(chosen, 1):
-        cases.append({
-            "case_id": f"{corpus}-{n:03d}", "corpus": corpus, "doc_id": docs[i]["doc_id"],
-            "date": docs[i]["date"], "pool": pool,
-            "candidates": [docs[j]["doc_id"] for j in candidates(corpus, i)],
-        })
-    out = C.DATA / f"cases_{corpus}.jsonl"
+    return lib, [{
+        "case_id": f"oir-{n:03d}", "corpus": "oir", "doc_id": lib.docs[i]["doc_id"],
+        "date": lib.docs[i]["date"], "pool": pool,
+        "candidates": [lib.docs[j]["doc_id"] for j in candidates(lib, qvecs, i)],
+    } for n, (i, pool) in enumerate(chosen, 1)]
+
+
+def main():
+    lib, cases = build()
+    out = C.DATA / "cases_oir.jsonl"
     with out.open("w", encoding="utf-8") as f:
         for c in cases:
             f.write(json.dumps(c, ensure_ascii=False) + "\n")
 
-    # The page carries every doc, so the annotator can search the whole KB when the right
-    # target is not among the suggested candidates.
+    # The page carries every bulletin, so the annotator can search the whole history when the
+    # right target is not among the suggested candidates.
     payload = {
-        "corpus": corpus,
-        "docs": {d["doc_id"]: [d["title"], d["date"], d["text"], d.get("url", "")] for d in docs},
+        "corpus": "oir",
+        "docs": {d["doc_id"]: [d["title"], d["date"], d["text"], d.get("url", "")] for d in lib.docs},
         "cases": [{k: c[k] for k in ("case_id", "doc_id", "date", "candidates")} for c in cases],
         # The second annotator's subset: 40 random cases from the first 150, which is how
         # far the main annotator is expected to get.
@@ -126,11 +129,11 @@ def main(corpus):
                                                         min(40, len(cases[:150])))),
     }
     tpl = (C.EXP / "labeling" / "annotate_template.html").read_text(encoding="utf-8")
-    page = C.EXP / "labeling" / f"annotate_{corpus}.html"
+    page = C.EXP / "labeling" / "annotate_oir.html"
     page.write_text(tpl.replace("/*DATA*/null", json.dumps(payload, ensure_ascii=False).replace("</", "<\\/")),
                     encoding="utf-8")
-    print(f"{len(cases)} cases -> {out.name}, {page.name}")
+    print(f"{len(cases)} cases -> {out.name}, {page.relative_to(C.EXP)}")
 
 
 if __name__ == "__main__":
-    main(sys.argv[1] if len(sys.argv) > 1 else "oir")
+    main()
