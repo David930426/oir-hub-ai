@@ -22,7 +22,7 @@ from pathlib import Path
 
 import numpy as np
 
-ROOT = Path(__file__).resolve().parent.parent
+ROOT = Path(__file__).resolve().parent.parent.parent  # core/ -> experiment/ -> repo root
 EXP = ROOT / "experiment"
 DATA = EXP / "data"
 CACHE = DATA / "cache"

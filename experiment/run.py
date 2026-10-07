@@ -20,9 +20,9 @@ from collections import Counter, defaultdict
 
 import numpy as np
 
-import corpus as C
-from methods import all_methods, signals
-from metrics import (LABELS, bootstrap_ci, confusion, correct_vector, holm, kappa, macro_f1,
+from core import corpus as C
+from core.methods import all_methods, signals
+from core.metrics import (LABELS, bootstrap_ci, confusion, correct_vector, holm, kappa, macro_f1,
                      mcnemar_exact, paired_bootstrap_diff, per_class, target_accuracy, target_hit)
 
 SEED = 13

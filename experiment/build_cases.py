@@ -25,7 +25,7 @@ import random
 
 import numpy as np
 
-import corpus as C
+from core import corpus as C
 
 SEED = 13
 POOL_SIZES = {"title": 90, "semantic": 60, "random": 50}

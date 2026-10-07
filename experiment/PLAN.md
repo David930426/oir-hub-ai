@@ -64,7 +64,7 @@ to validity. It is stated in the report and mitigated by the random pool.
 - **Gate:** Cohen's κ ≥ 0.6 → proceed. Below that → revise the rubric, bump its version, and
   re-label.
 
-## Conditions (all implemented in `methods.py`)
+## Conditions (all implemented in `core/methods.py`)
 
 | | Condition | Notes |
 |---|---|---|
@@ -84,7 +84,7 @@ The deployed router in `pipeline.py` is not the M2 LLM judge. It is a reranker p
 coverage rule, so it is a deterministic method. Adding it as **B5** is a cheap extension if
 time allows, and it would give the "what we ship today" row.
 
-## Metrics and tests (`metrics.py`, unit-tested in `test_metrics.py`)
+## Metrics and tests (`core/metrics.py`, unit-tested in `core/test_metrics.py`)
 
 - Macro-F1 (primary), per-class P/R/F1, confusion matrix, accuracy
 - Target accuracy for gold UPDATE: conditional (given a correct UPDATE) and joint

@@ -30,8 +30,8 @@ import requests
 from pydantic import BaseModel, Field
 from typing import Literal
 
-import corpus as C
-from metrics import LABELS, macro_f1
+from . import corpus as C
+from .metrics import LABELS, macro_f1
 
 U, N, R = "UPDATE", "NEW", "REDUNDANT"
 TOP_RERANK = 10

@@ -22,7 +22,7 @@ import time
 
 import requests
 
-import corpus as C
+from core import corpus as C
 
 PREFERENCE = {"pdf": 0, "docx": 1, "odt": 2}   # .doc (old binary Word) cannot be read
 MIN_CHARS = 200                                  # below this a PDF is a scan or a poster

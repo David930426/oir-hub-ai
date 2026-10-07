@@ -27,8 +27,8 @@ import sys
 
 import numpy as np
 
-import corpus as C
-from methods import LLM, TOP_LLM, signals
+from core import corpus as C
+from core.methods import LLM, TOP_LLM, signals
 
 TOP_RELATED = 10
 RRF_K = 60  # standard reciprocal-rank-fusion constant

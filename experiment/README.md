@@ -29,7 +29,7 @@ for the LLM conditions. Qdrant is **not** needed.
 .venv/Scripts/python experiment/fetch_files.py     # one input file per case -> data/files/, files_manifest.jsonl
 
 # metric self-test
-.venv/Scripts/python experiment/test_metrics.py
+.venv/Scripts/python experiment/core/test_metrics.py
 ```
 
 ## The test files
@@ -60,26 +60,31 @@ results never depend on what you added.
 ```
 experiment/
 ├── PLAN.md  RUBRIC.md  README.md
-├── check_doc.py       your file -> related bulletins + decision; --apply updates the library
-├── run.py             the experiment: split, tune on dev, score on test, write the report
-├── scrape_oir.py      OIR news posts and attachment links -> data/oir_news.jsonl (1 req/s)
-├── build_cases.py     pool sampling, candidate lists, labeling page
-├── fetch_files.py     downloads each case's attachment, or writes the bulletin as .md
-├── corpus.py          library, file reading, normalisation, e5 vectors, BM25        (helper)
-├── methods.py         conditions B0-B4 and M1-M4, shared by run.py and check_doc.py   (helper)
-├── metrics.py         macro-F1, target accuracy, McNemar, Holm, bootstrap, kappa       (helper)
-├── test_metrics.py    hand-checked tests for metrics.py
+│
+│   the programs, in the order they are used
+├── scrape_oir.py      1. all OIR bulletins + attachment links -> data/oir_news.jsonl
+├── build_cases.py     2. pick the 200 test questions -> data/cases_oir.jsonl + labeling page
+├── fetch_files.py     3. one input file per question -> data/files/
+│                      4. (you) write the answers in labeling/annotate_oir.html
+├── run.py             5. all 9 conditions answer the 200 questions; graded against your answers
+├── check_doc.py       6. your own file -> related bulletins + decision; --apply updates the library
+│
+├── core/              helpers the programs use - you never run these
+│   ├── corpus.py          library, file reading, normalisation, e5 vectors, BM25
+│   ├── methods.py         conditions B0-B4 and M1-M4, shared by run.py and check_doc.py
+│   ├── metrics.py         macro-F1, target accuracy, McNemar, Holm, bootstrap, kappa
+│   └── test_metrics.py    hand-checked tests for metrics.py
 ├── labeling/
 │   ├── annotate_template.html   the labeling tool (source)
 │   └── annotate_oir.html        built from it by build_cases.py   (not committed)
 ├── data/
 │   ├── oir_news.jsonl           1,295 scraped bulletins (1,164 dated)
-│   ├── cases_oir.jsonl          the 200 test cases
-│   ├── files_manifest.jsonl     which input file each case uses
+│   ├── cases_oir.jsonl          the 200 test questions
+│   ├── files_manifest.jsonl     which input file each question uses
 │   ├── labels_oir_draft.csv     model-drafted answer key - review before use
 │   ├── kb_changes.jsonl         what check_doc.py --apply changed (appears on first use)
 │   ├── files/                   the 200 input files                     (not committed)
-│   ├── raw/  cache/             scraped HTML, vectors, LLM answers       (not committed)
+│   ├── raw/  cache/             scraped HTML backup, vectors, LLM answers (not committed)
 │   └── oir_news.csv             Excel copy of oir_news.jsonl             (not committed)
 └── runs/                        one folder per run.py run                (not committed)
 ```
