@@ -60,6 +60,15 @@ desktop.ini
 tmp/
 scratch/
 
-# ---- Experiment: cached scrape (re-fetchable) ----
+# ---- Experiment: everything here can be regenerated ----
+# scraped HTML (scrape_oir.py re-fetches it)
 experiment/data/raw/
-experiment/runs/*/raw/
+# embeddings, signals, cached LLM answers
+experiment/data/cache/
+# Excel copy of oir_news.jsonl
+experiment/data/oir_news.csv
+# run.py output, one folder per run
+experiment/runs/
+# labeling pages are built by build_cases.py from the template
+experiment/labeling/annotate_*.html
+!experiment/labeling/annotate_template.html

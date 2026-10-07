@@ -1,4 +1,6 @@
 from fastapi import FastAPI, UploadFile, File, HTTPException
+from pathlib import Path
+
 from fastapi.responses import FileResponse
 from pipeline import ingest_text, route_document, ensure_collection, COLLECTION, client
 from extract import extract_text
@@ -8,7 +10,7 @@ app = FastAPI(title="OIR Document Router")
 
 @app.get("/")
 def index():
-    return FileResponse("static/index.html")
+    return FileResponse(Path(__file__).parent / "static" / "index.html")
 
 
 @app.post("/api/check")

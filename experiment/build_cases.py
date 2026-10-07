@@ -1,7 +1,7 @@
 """Sample the cases to label, and write the offline labeling page.
 
-    python experiment/build_cases.py oir     # main set  -> data/cases_oir.jsonl, annotate_oir.html
-    python experiment/build_cases.py local   # pilot set -> data/cases_local.jsonl, annotate_local.html
+    python experiment/build_cases.py oir     # main set  -> data/cases_oir.jsonl, labeling/annotate_oir.html
+    python experiment/build_cases.py local   # pilot set -> data/cases_local.jsonl, labeling/annotate_local.html
 
 Why pools and not a plain random sample: roughly 9 in 10 OIR posts are NEW, so 200 random
 posts would give a handful of UPDATEs and no hard negatives. Three pools instead:
@@ -125,8 +125,8 @@ def main(corpus):
         "kappa": sorted(random.Random(SEED + 2).sample([c["case_id"] for c in cases[:150]],
                                                         min(40, len(cases[:150])))),
     }
-    tpl = (C.EXP / "annotate_template.html").read_text(encoding="utf-8")
-    page = C.EXP / f"annotate_{corpus}.html"
+    tpl = (C.EXP / "labeling" / "annotate_template.html").read_text(encoding="utf-8")
+    page = C.EXP / "labeling" / f"annotate_{corpus}.html"
     page.write_text(tpl.replace("/*DATA*/null", json.dumps(payload, ensure_ascii=False).replace("</", "<\\/")),
                     encoding="utf-8")
     print(f"{len(cases)} cases -> {out.name}, {page.name}")

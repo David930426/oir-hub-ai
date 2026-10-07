@@ -97,3 +97,13 @@ wcwidth==0.8.2
 websockets==16.1.1
 xxhash==3.8.1
 zstandard==0.25.0
+
+# ---- Not in the freeze above, but imported by the code ----
+# app/api.py (upload API); python-multipart is what FastAPI needs for UploadFile
+fastapi
+uvicorn
+python-multipart
+# app/extract.py reads .docx uploads
+python-docx
+# experiment/corpus.py reads the pilot PDFs
+pymupdf==1.28.2

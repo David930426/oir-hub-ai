@@ -6,7 +6,7 @@ from pathlib import Path
 from extract import extract_text
 from pipeline import ensure_collection, ingest_file, route_document
 
-DATA_DIR = Path(__file__).parent / "data"
+DATA_DIR = Path(__file__).resolve().parent.parent / "data"
 pdfs = sorted(DATA_DIR.glob("*.pdf"))
 
 ensure_collection(reset=True)

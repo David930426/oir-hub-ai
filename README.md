@@ -2,61 +2,50 @@
 
 AI layer for the Tunghai University **Office of International Relations (OIR)** hub.
 
-When OIR receives a new document — an immigration notice, a dorm fee change, a campus
-policy update — someone has to decide whether it *replaces* information already published
-or is genuinely *new*. This project prototypes that decision:
+When OIR publishes a new announcement, someone has to decide whether it **replaces** an
+earlier one (`UPDATE`), is about something not covered yet (`NEW`), or repeats what is
+already posted (`REDUNDANT`). Getting this wrong means students read outdated deadlines.
+This repo holds the router that makes that decision and the 專題 experiment that measures
+how well it does.
 
-1. **Chunk & embed** the existing knowledge base into a Qdrant vector collection.
-2. **Compare** an incoming document against that collection by semantic similarity.
-3. **Route** the result through a local LLM that returns a structured verdict:
-   `UPDATE` (with the target file) or `NEW_BULLETIN`.
+## Layout
 
-Current state: a single exploratory notebook, [document-similarity.ipynb](document-similarity.ipynb),
-plus sample corpora under [mock-data/](mock-data/).
+```
+oir-hub-ai/
+├── app/          the document router: upload a file, get UPDATE / NEW and the matching document
+├── experiment/   the 專題 study: scraped OIR bulletins, labeled cases, baselines vs LLM, statistics
+├── data/         sample OIR documents (PDF brochures) used by the app demo and the pilot set
+├── docs/         design notes and the plain-language file guide
+└── prototype/    the first exploratory notebook and its mock data (kept for reference)
+```
 
----
-
-## How it works
-
-| Stage | Component | Notes |
-|---|---|---|
-| Splitting | `RecursiveCharacterTextSplitter` | 800-char chunks, 200-char overlap, punctuation kept at chunk end |
-| Embedding | `intfloat/multilingual-e5-base` | Multilingual (EN/中文); `passage:` / `query:` prefixes applied, vectors L2-normalized |
-| Storage | Qdrant | Cosine distance; payload holds `source_file` + `content` |
-| Retrieval | `client.query_points` | Top-k nearest chunks; the top score drives the routing decision |
-| Routing | Ollama (`qwen3:4b`) via the OpenAI-compatible API | JSON-schema-constrained output validated by a Pydantic `RoutingDecision` model |
-
-Chunk IDs are deterministic (`uuid5` over `"<filename>:<index>"`), so re-ingesting the same
-file overwrites its points instead of duplicating them.
+| Folder | Start here |
+|---|---|
+| `experiment/` | [experiment/README.md](experiment/README.md), then [PLAN.md](experiment/PLAN.md) and [RUBRIC.md](experiment/RUBRIC.md) |
+| `docs/` | [OIR-Experiment-File-Guide.pdf](docs/OIR-Experiment-File-Guide.pdf): what every experiment file does, step by step |
+| `app/` | the section below |
 
 ## Prerequisites
 
-- **Python 3.12**
-- **Qdrant** — Qdrant Cloud, or locally:
-  ```bash
-  docker run -p 6333:6333 -v "$(pwd)/qdrant_storage:/qdrant/storage" qdrant/qdrant
-  ```
-- **Ollama** with the routing model pulled, serving on `http://localhost:11434`:
+- **Python 3.12.** The pinned PyTorch build has no wheels for newer Pythons (the machine default is 3.14).
+- **Ollama** serving `qwen3:4b` on `http://localhost:11434`:
   ```bash
   ollama pull qwen3:4b
   ```
-- A **Hugging Face token** (needed to download the embedding model).
+- **Qdrant**, for the app only (the experiment does not use it). Use Qdrant Cloud, or run it locally:
+  ```bash
+  docker run -p 6333:6333 -v "$(pwd)/qdrant_storage:/qdrant/storage" qdrant/qdrant
+  ```
+- A **Hugging Face token**, to download the embedding model.
 
 ## Setup
 
 ```bash
 python -m venv .venv
-.venv\Scripts\activate          # Windows
-# source .venv/bin/activate     # macOS / Linux
-
-pip install qdrant-client sentence-transformers langchain-text-splitters \
-            python-dotenv openai pydantic jupyter
-```
-
-Copy the env template and fill in your values:
-
-```bash
-cp .env.example .env
+.venv\Scripts\activate                 # Windows  (macOS/Linux: source .venv/bin/activate)
+pip install -r requirements-gpu.txt    # CUDA build of torch; skip on CPU-only machines
+pip install -r requirements.txt
+cp .env.example .env                   # then fill in the values below
 ```
 
 | Variable | Purpose |
@@ -65,48 +54,38 @@ cp .env.example .env
 | `QDRANT_API_KEY` | Qdrant Cloud API key; leave blank for an unsecured local instance |
 | `HUGGINGFACE_TOKEN` | Token used to pull `intfloat/multilingual-e5-base` |
 
-`.env` is git-ignored — keep real keys out of commits.
+`.env` is git-ignored, so keep real keys out of commits.
 
-## Running
-
-Open the notebook and run the cells top to bottom:
-
-```bash
-jupyter notebook document-similarity.ipynb
-```
-
-The notebook, in order:
-
-1. Sets config constants (embedding model, chunk sizes, collection name `test_bulletins`).
-2. Connects to Qdrant, loads the embedding model, builds the splitter.
-3. **Drops and recreates the collection** — every run starts from a clean slate.
-4. Ingests the files listed in `documents_to_upload`
-   (`tunghai_academic_guide.txt`, `tunghai_life_guide.txt`).
-5. Embeds a candidate document (`test_new_file`, default `mock-data/mock-arc.txt`) and
-   queries for the closest chunks.
-6. Sends the new text plus the best-matching chunk to the LLM and prints the parsed
-   `RoutingDecision`.
-
-To try a different candidate, change `test_new_file` and re-run from that cell down.
-
-## Mock data
+## The app (`app/`)
 
 | File | Role |
 |---|---|
-| `tunghai_academic_guide.txt` | Baseline KB — ARC registration, credit transfer, academics |
-| `tunghai_life_guide.txt` | Baseline KB — dorms, campus life, facilities |
-| `oir_sample_knowledge_base.txt` | Larger combined OIR guide |
-| `mock-arc.txt` | Incoming doc that **contradicts** the ARC section → expect `UPDATE` |
-| `mock-dorm.txt` | Incoming doc that **revises dorm fees** → expect `UPDATE` |
-| `mock-scooter.txt` | Incoming doc on an **uncovered topic** → expect `NEW_BULLETIN` |
+| `pipeline.py` | Ingest documents into Qdrant; route an incoming document (section-level match, `bge-reranker-v2-m3` scores, text-coverage rule) |
+| `extract.py` | Plain text from `.pdf`, `.docx`, `.txt`/`.md` |
+| `api.py` | FastAPI server: `POST /api/check`, `POST /api/ingest`, `GET /api/stats`, upload page at `/` |
+| `run_demo.py` | Ingest the 2024 brochures from `data/`, then route the 2025 ones |
+| `static/index.html` | Upload page |
 
-The three `mock-*` files are the test cases: two should be recognized as updates to
-existing content, one as a genuinely new bulletin.
+```bash
+.venv/Scripts/python app/run_demo.py                  # command-line demo
+.venv/Scripts/uvicorn api:app --app-dir app --reload  # web app at http://localhost:8000
+```
 
-## Notes & next steps
+How routing works: each document is split into ~800-character sections and embedded with
+`multilingual-e5-base`. Each section is matched against the knowledge base in Qdrant and
+scored by the reranker. Sections already present word-for-word count as unchanged.
+Chunk IDs are deterministic (`uuid5` over `"<filename>:<index>"`), so re-ingesting a file
+overwrites it instead of duplicating it.
 
-- Reranking (`BAAI/bge-reranker-v2-m3`) is stubbed out in the config but not wired up.
-- The similarity threshold that separates `UPDATE` from `NEW_BULLETIN` is not yet fixed —
-  the top score is printed so it can be calibrated against the mock cases.
-- The notebook is a prototype; extracting the ingest/query/route steps into modules is the
-  natural next move before this is called from the OIR hub backend.
+## The experiment (`experiment/`)
+
+It answers one question: can a small local LLM (Qwen3-4B) decide UPDATE / NEW / REDUNDANT
+better than simple rules? The test set is 200 real bulletins scraped from oir.thu.edu.tw,
+and the experiment compares 5 rule baselines with 4 LLM setups, using significance tests.
+Everything is in [experiment/README.md](experiment/README.md).
+
+## Prototype (`prototype/`)
+
+`document-similarity.ipynb` is the first notebook that explored the idea on the mock files in
+`prototype/mock-data/` (`mock-arc.txt` and `mock-dorm.txt` should be UPDATEs,
+`mock-scooter.txt` should be NEW). It is superseded by `app/` and kept only for reference.

@@ -49,7 +49,7 @@ to validity. It is stated in the report and mitigated by the random pool.
 - **Rubric:** `RUBRIC.md`, frozen before labeling starts. It includes the edge cases: yearly
   edition = UPDATE, translation = REDUNDANT, template trap = NEW, extension notice = UPDATE, and
   results list = NEW.
-- **Annotator 1 (you):** all cases, in `annotate_oir.html`. It is offline, uses u/n/r and
+- **Annotator 1 (you):** all cases, in `labeling/annotate_oir.html`. It is offline, uses u/n/r and
   1–9 shortcuts, autosaves, and exports to CSV. Budget ≈ 1.5–2 min per case, so about 5 hours
   for 150 cases.
 - **Annotator 2 (a classmate who did not build the system):** the fixed 40-case κ subset
