@@ -19,12 +19,14 @@ import csv
 import datetime as dt
 import json
 import random
+import re
 import shutil
 from collections import Counter, defaultdict
 
 import numpy as np
 
 from core import corpus as C
+from core import methods as M
 from core.methods import all_methods, signals
 from core.metrics import (LABELS, bootstrap_ci, confusion, correct_vector, holm, kappa, macro_f1,
                      mcnemar_exact, paired_bootstrap_diff, per_class, target_accuracy, target_hit)
@@ -214,6 +216,8 @@ def load_cases(gold):
 
 
 def evaluate(args):
+    M.LLM_MODEL = args.model
+    M.USE_FORMAT = not args.free_json
     gold = read_labels(args.labels)
     cases = load_cases(gold)
     sig = signals(cases, C.Library.load(), rerank=True)
@@ -237,7 +241,8 @@ def evaluate(args):
         f = macro_f1([gold[c["case_id"]]["label"] for c in test], [out[c["case_id"]][0] for c in test])
         print(f"{m.name:24s} macro-F1 {f:.3f}")
 
-    run = C.EXP / "runs" / f"{dt.datetime.now():%Y%m%d_%H%M%S}"
+    tag = re.sub(r"[^\w.-]+", "-", args.model) + ("_free-json" if args.free_json else "")
+    run = C.EXP / "runs" / f"{dt.datetime.now():%Y%m%d_%H%M%S}_{tag}"
     run.mkdir(parents=True)
     report(run, args, cases, dev, test, gold, sig, methods, preds)
     # The newest results are always also in runs/latest/, so there is one obvious place to look.
@@ -256,6 +261,9 @@ def report(run, args, cases, dev, test, gold, sig, methods, preds):
     w = L.append
 
     w(f"# Results  ({dt.datetime.now():%Y-%m-%d %H:%M})\n")
+    w(f"LLM: **{args.model}** · JSON: "
+      + ("free (the model must write valid JSON itself)" if args.free_json else "schema-constrained by Ollama")
+      + " · the rule methods (B0–B4) do not use the LLM, so they are the same in every run.\n")
     kinds = Counter(c["kind"] for c in test)
     w(f"Input files (test): {kinds['attachment']} real attachments (PDF/Word), "
       f"{kinds['bulletin-md']} bulletins written as .md (no readable attachment).\n")
@@ -306,6 +314,28 @@ def report(run, args, cases, dev, test, gold, sig, methods, preds):
     w("\n*s/decision and tokens/decision are averaged over all test cases, so the cascade's cost includes the "
       "cases it settled without the LLM. Latency is wall-clock on the local GPU and includes model load for "
       "the first call.*\n")
+
+    # Reliability of the LLM itself: did it answer in valid JSON, and how fast? A failed answer is
+    # scored as NEW (the pipeline's safe default), so failures also show up in the accuracy above.
+    llm_methods = [m for m in methods if m.uses_llm]
+    if llm_methods:
+        w(f"## LLM reliability and speed ({args.model})\n")
+        w("| condition | LLM calls | valid JSON | recovered JSON | invalid JSON | request failed | "
+          "mean s | median s | slowest 10% s |")
+        w("|---|---|---|---|---|---|---|---|---|")
+        for m in llm_methods:
+            info = [preds[m.name][i][2] for i in ids]
+            asked = [x for x in info if x.get("escalated", True)]  # the cascade's rule answers are not calls
+            q = Counter(x.get("json") or x.get("error_kind") for x in asked)
+            lat = sorted(x["latency_s"] for x in asked if "latency_s" in x)
+            n = len(asked)
+            w(f"| {m.name} | {n} | {pct(q['valid'], n)} | {pct(q['recovered'], n)} | {pct(q['invalid_json'], n)} | "
+              f"{pct(q['request_failed'], n)} | {fmt(np.mean(lat), 2) if lat else '–'} | "
+              f"{fmt(float(np.median(lat)), 2) if lat else '–'} | "
+              f"{fmt(float(np.quantile(lat, 0.9)), 2) if lat else '–'} |")
+        w("\n*recovered* = valid only after cutting text around the JSON object (e.g. ```json fences). "
+          "With schema-constrained JSON (the default) invalid JSON is practically impossible; run with "
+          "`--free-json` to measure whether the model produces valid JSON by itself.\n")
 
     # Significance: every LLM condition against the best baseline, chosen on DEV macro-F1 so the
     # comparison is not picked after seeing test.
@@ -440,6 +470,9 @@ if __name__ == "__main__":
     ap.add_argument("--no-llm", action="store_true")
     ap.add_argument("--only", help="comma-separated condition codes, e.g. B2,M2")
     ap.add_argument("--boot", type=int, default=10_000)
+    ap.add_argument("--model", default="qwen3:4b", help="Ollama model for M1-M4, e.g. qwen3:4b, phi4-mini, llama3.2:3b")
+    ap.add_argument("--free-json", action="store_true",
+                    help="do not let Ollama enforce the JSON schema; measures the model's own JSON stability")
     args = ap.parse_args()
     if args.labels == "kappa":
         args.labels, args.other = args.other

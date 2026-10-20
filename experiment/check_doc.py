@@ -28,6 +28,7 @@ import sys
 import numpy as np
 
 from core import corpus as C
+from core import methods as M
 from core.methods import LLM, TOP_LLM, signals
 
 TOP_RELATED = 10
@@ -114,12 +115,14 @@ def main():
     ap.add_argument("--date", default=dt.date.today().isoformat(),
                     help="the document's date (default today); only older documents are searched")
     ap.add_argument("--no-llm", action="store_true", help="list related documents only")
+    ap.add_argument("--model", default=M.LLM_MODEL, help="Ollama model to decide with (default qwen3:4b)")
     ap.add_argument("--apply", action="store_true", help="add the file to the library / retire the old one")
     ap.add_argument("--decision", choices=["UPDATE", "NEW", "REDUNDANT"], help="override the AI's decision")
     ap.add_argument("--target", help="override which document is replaced (a doc_id from the list)")
     ap.add_argument("--undo", action="store_true", help="take back the last --apply")
     ap.add_argument("--history", action="store_true", help="list the changes --apply has made")
     args = ap.parse_args()
+    M.LLM_MODEL = args.model
     sys.stdout.reconfigure(encoding="utf-8")
 
     if args.undo:
