@@ -54,6 +54,7 @@ textarea{width:100%;min-height:54px}
   <input id="annot" size="4" placeholder="initials" aria-label="annotator initials">
   <button id="export">Export CSV</button>
   <label><button id="importBtn">Import CSV</button><input type="file" id="import" accept=".csv" hidden></label>
+  <button id="clearAll" title="delete every label saved in this browser">Clear all</button>
 </header>
 <main>
   <section>
@@ -193,6 +194,10 @@ $("#import").onchange = async e => {
       field: r[ix("changed_field")]||"", flags, notes: flags.length ? rest.join(" | ") : (r[ix("notes")]||""),
       seconds: +r[ix("seconds")]||0, annotator: r[ix("annotator")] }; }
   store.set(labels); render();
+};
+$("#clearAll").onclick = () => {
+  if (!confirm("Delete ALL labels saved in this browser? Export a CSV first if you want to keep them.")) return;
+  labels = {}; store.set(labels); cur = 0; t0 = Date.now(); render();
 };
 render();
 </script>
