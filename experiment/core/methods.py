@@ -22,6 +22,7 @@ import difflib
 import hashlib
 import json
 import pickle
+import re
 import time
 from collections import Counter
 
@@ -230,7 +231,10 @@ class Metadata(Method):
 # ---------------------------------------------------------------- LLM judge
 
 OLLAMA = "http://localhost:11434/api/chat"
-LLM_MODEL = "qwen3:4b"
+LLM_MODEL = "qwen3:4b"   # run.py --model / check_doc.py --model change this
+# True: Ollama forces the answer to match the JSON schema. False (run.py --free-json): the model must
+# produce valid JSON on its own, which is what "structured-output stability" measures.
+USE_FORMAT = True
 # ~4.6k prompt tokens with 5 candidates; few-shot adds three more such blocks, hence num_ctx 16k.
 IN_CHARS, CAND_CHARS = 2000, 700
 
@@ -240,18 +244,30 @@ A new announcement has arrived. Decide what the ingestion pipeline must do with 
 UPDATE    - it replaces information in an existing document: the same program, scholarship, event or rule,
             but something a student acts on changed (new cycle/semester/year, deadline, fee, quota,
             eligibility, required documents, procedure, link). A new yearly edition is an UPDATE.
-            A deadline extension or correction notice is an UPDATE.
+            A deadline extension or correction notice (延長, 更正) is an UPDATE. So is a second selection
+            round (第二次甄選), the next stage of the same selection, and the next edition of a recurring
+            info session, sharing session, interview schedule or volunteer recruitment.
 NEW       - no existing document covers the same program/event/rule. Two different scholarships or schools
-            that merely share a template are different programs. Result lists and info sessions are NEW.
+            that merely share a template are different programs. Result and name lists (錄取名單, 獲獎名單,
+            甄選結果, 放榜), job postings (徵才) and numbered lectures in a series (系列) are NEW.
 REDUNDANT - an existing document already says the same thing for the same cycle (re-post, typo fix,
             or the English/Chinese translation of the same announcement).
 
-If several candidates are editions of the same program, the target is the most recent one.
+If several candidates are editions of the same program, the target is the most recent one, preferring the
+same term (fall or spring) as the new announcement.
 Write the rationale first (one or two sentences, English), then the label.
 target must be the candidate id (C1-C5) that is replaced or duplicated for UPDATE and REDUNDANT, and NONE for NEW."""
 
 SYSTEM_NO_KB = SYSTEM.split("If several")[0] + """You cannot see the knowledge base. Judge from the announcement alone.
 Write the rationale first (one or two sentences, English), then the label. target must be null."""
+
+
+FREE_JSON_HINT = """
+Answer with one JSON object and nothing else, exactly these keys:
+{"rationale": "...", "label": "UPDATE" | "NEW" | "REDUNDANT", "target": "C1".."C5" | "NONE", "confidence": 0.0-1.0}"""
+FREE_JSON_HINT_NO_KB = """
+Answer with one JSON object and nothing else, exactly these keys:
+{"rationale": "...", "label": "UPDATE" | "NEW" | "REDUNDANT", "confidence": 0.0-1.0}"""
 
 
 class Verdict(BaseModel):
@@ -292,7 +308,10 @@ def call_llm(messages, schema, timeout=300):
     identical prompt, costs nothing - and the measured latency of the original call is kept."""
     global _llm_cache
     import hashlib
-    key = hashlib.sha256(json.dumps([LLM_MODEL, messages, schema.__name__], ensure_ascii=False).encode()).hexdigest()
+    # The original key (model, messages, schema) is kept for schema-constrained calls so earlier
+    # cached answers stay valid; free-JSON calls are a different request and get their own key.
+    parts = [LLM_MODEL, messages, schema.__name__] + ([] if USE_FORMAT else ["free-json"])
+    key = hashlib.sha256(json.dumps(parts, ensure_ascii=False).encode()).hexdigest()
     if _llm_cache is None:
         _llm_cache = {}
         if LLM_CACHE.exists():
@@ -301,24 +320,54 @@ def call_llm(messages, schema, timeout=300):
                 _llm_cache[row["key"]] = row
     if key in _llm_cache:
         row = _llm_cache[key]
-        return schema.model_validate_json(row["content"]), row["cost"]
-    content, cost = _call_llm(messages, schema, timeout)
-    C.CACHE.mkdir(parents=True, exist_ok=True)
-    row = {"key": key, "content": content, "cost": cost}
-    with LLM_CACHE.open("a", encoding="utf-8") as f:
-        f.write(json.dumps(row, ensure_ascii=False) + "\n")
-    _llm_cache[key] = row
-    return schema.model_validate_json(content), cost
+    else:
+        content, cost = _call_llm(messages, schema, timeout)
+        C.CACHE.mkdir(parents=True, exist_ok=True)
+        row = {"key": key, "content": content, "cost": cost}
+        with LLM_CACHE.open("a", encoding="utf-8") as f:
+            f.write(json.dumps(row, ensure_ascii=False) + "\n")
+        _llm_cache[key] = row
+    verdict, quality = parse_json(row["content"], schema)
+    return verdict, {**row["cost"], "json": quality}
+
+
+class InvalidJSON(ValueError):
+    pass
+
+
+def parse_json(content, schema):
+    """("valid" | "recovered") verdict, or InvalidJSON. "recovered" = the JSON was only usable after
+    cutting away text around it (e.g. ```json fences or an explanation before the object)."""
+    try:
+        return schema.model_validate_json(content), "valid"
+    except Exception:
+        pass
+    m = re.search(r"\{.*\}", content, re.S)
+    if m:
+        try:
+            return schema.model_validate_json(m.group(0)), "recovered"
+        except Exception:
+            pass
+    raise InvalidJSON(f"invalid JSON: {content[:200]!r}")
+
+
+_no_think = set()  # models that reject the "think" switch (they do not think in the first place)
 
 
 def _call_llm(messages, schema, timeout):
     t0 = time.time()
-    r = requests.post(OLLAMA, timeout=timeout, json={
-        "model": LLM_MODEL, "stream": False,
-        "think": False,  # qwen3 thinking = minutes per call on this GPU; see the notebook
-        "messages": messages, "format": schema.model_json_schema(),
-        "options": {"temperature": 0, "seed": 0, "num_ctx": 16384},
-    })
+    req = {"model": LLM_MODEL, "stream": False, "messages": messages,
+           "options": {"temperature": 0, "seed": 0, "num_ctx": 16384}}
+    if USE_FORMAT:
+        # Ollama constrains decoding to the schema, so the answer is valid JSON by construction.
+        req["format"] = schema.model_json_schema()
+    if LLM_MODEL not in _no_think:
+        req["think"] = False  # qwen3 thinking = minutes per call on this GPU; see the notebook
+    r = requests.post(OLLAMA, timeout=timeout, json=req)
+    if r.status_code == 400 and "think" in r.text.lower() and "think" in req:
+        _no_think.add(LLM_MODEL)
+        del req["think"]
+        r = requests.post(OLLAMA, timeout=timeout, json=req)
     r.raise_for_status()
     body = r.json()
     return body["message"]["content"], {
@@ -376,11 +425,15 @@ class LLM(Method):
         user, cands = render_user(case, sig, self.with_kb)
         schema = Verdict if self.with_kb else VerdictNoKB
         system = SYSTEM if self.with_kb else SYSTEM_NO_KB
+        if not USE_FORMAT:  # without the schema constraint the model has to be told the shape
+            system += FREE_JSON_HINT if self.with_kb else FREE_JSON_HINT_NO_KB
         msgs = [{"role": "system", "content": system}, *self.examples, {"role": "user", "content": user}]
         try:
             v, cost = call_llm(msgs, schema)
-        except Exception as e:  # count a failed call as NEW - the pipeline's safe default
-            return N, None, {"error": repr(e)}
+        except InvalidJSON as e:  # count a failed call as NEW - the pipeline's safe default
+            return N, None, {"error": str(e), "error_kind": "invalid_json"}
+        except Exception as e:
+            return N, None, {"error": repr(e), "error_kind": "request_failed"}
         target = None
         tgt = getattr(v, "target", None)
         if v.label != N and tgt and tgt != "NONE" and int(tgt[1:]) <= len(cands):
