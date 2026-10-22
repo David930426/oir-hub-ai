@@ -1,0 +1,41 @@
+﻿case_id,gold_label,gold_target,changed_field,notes,annotator,seconds
+oir-003,UPDATE,oir-589,,the 2023 summer camp announcement replace the 2020 one,clau,174
+oir-005,NEW,,,same event but different time & topic,clau,133
+oir-010,UPDATE,oir-1121|oir-594,,same event; replace the 2025 event,clau,118
+oir-011,NEW,,,there is no Olympia Summer Academy before ; its a new event,clau,79
+oir-015,NEW,,,reworded | new recruitment ,clau,56
+oir-029,UPDATE,oir-739,,"same event, but different time",clau,42
+oir-030,UPDATE,oir-755|oir-598,,replce the old one,clau,-16
+oir-038,NEW,,,new event; there is no summer workshop in Tokai University before,clau,65
+oir-040,UPDATE,oir-221|oir-199,,reworded | replaces the previous event; same event,clau,79
+oir-041,UPDATE,oir-568|oir-223,,"reworded | The purpose of the event is the same, but it takes place at a different time",clau,231
+oir-047,UPDATE,oir-929|oir-813,,"reworded | sama purpose, but it takes place at a different time.",clau,205
+oir-053,NEW,,,template_trap | volunteer recruitment for a new term;,clau,187
+oir-054,NEW,,,new list of accepted student,clau,31
+oir-059,NEW,,,a phase different from the previous one,clau,88
+oir-060,UPDATE,oir-1148|oir-999,,reworded |  2026 CYC student delegation to Japan replaces the 2025 edition,clau,98
+oir-062,UPDATE,oir-784|oir-728|oir-576,,reworded | 112-1 MOE international competition subsidy replaces the 2022 call,clau,49
+oir-063,UPDATE,oir-752|oir-577,,reworded | 2023 Japan Foundation grant programs replace the 2022 edition,clau,35
+oir-066,UPDATE,oir-522|oir-446|oir-340|oir-235|oir-154|oir-96,,2020 schedule replace the previous edition,clau,58
+oir-068,NEW,,,new admitted results,clau,29
+oir-072,UPDATE,oir-403|oir-372|oir-320,,reworded | same event but different time,clau,80
+oir-073,UPDATE,oir-888,,2024 PSB Paris School of Business summer school replaces the 2023 post,clau,46
+oir-074,NEW,,,template_trap | 2017 spring Chinese-camp volunteer recruitment,clau,38
+oir-081,UPDATE,oir-1283|oir-1174,,reworded | another online info session for the Temple ACT summer program in the same year,clau,74
+oir-087,UPDATE,oir-1189|oir-1021|oir-852|oir-563,,reworded | 2026 scholarship announcement replaces the previous edition,clau,94
+oir-089,UPDATE,oir-833|oir-589,, 113 Slavic-language summer camp scholarship replaces the 112 edition,clau,91
+oir-091,UPDATE,oir-473,,second-round results for the 2018 fall mainland exchange; results are new,clau,261
+oir-092,NEW,,,no earlier post about it,clau,52
+oir-094,NEW,,,a new staff job opening; each vacancy is a separate posting,clau,22
+oir-095,UPDATE,oir-994|oir-818,,2025 Yonsei summer school replaces the previous post,clau,34
+oir-101,UPDATE,oir-249|oir-242,,reworded | second selection round for 2016 fall mainland exchange reopens the same,clau,31
+oir-103,NEW,,,UNSW 3+1+X promotion at an education fair; the older UNSW posts are about the pre-program selection,clau,19
+oir-108,NEW,,,new admitted list,clau,29
+oir-119,UPDATE,oir-114,,2015 schedule replaces the 2014 edition,clau,52
+oir-120,REDUNDANT,oir-1091,,reworded | the same Taipei City youth international development grant rules re-announced three months later,clau,46
+oir-122,UPDATE,oir-744|oir-759,,fall 2022 round of the Ghent virtual conversation rooms replaces the spring 2022 round,clau,37
+oir-131,REDUNDANT,oir-828,,same template & information,clau,52
+oir-134,UPDATE,oir-365|oir-375,,interview order for the 2018 fall mainland selection replaces the one for 2017 fall,clau,65
+oir-139,UPDATE,oir-999,,2025 CYC student delegation to Japan replaces the 2024 edition,clau,43
+oir-145,UPDATE,oir-461|oir-432,,reworded | 2019 mainland summer camp selection replaces the 2018 mainland summer camp call,clau,42
+oir-150,UPDATE,oir-848,,new application round of the Xuehai Xizhu scholarship replaces the February 2023 call,clau,31
