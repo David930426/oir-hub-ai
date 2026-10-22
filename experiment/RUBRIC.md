@@ -35,30 +35,27 @@ For `UPDATE` you also give `gold_target`: the KB document that `d*` replaces. Fo
 
 ## Edge cases (these override the procedure above)
 
-When two rows apply, the `NEW` rows for results, name lists, recruitment, phases and a different
-term win over the `UPDATE` rows. The one exception is a deadline extension or correction
-(「延長」「更正」), which stays `UPDATE`.
+These rows describe how the team labeled the 200 cases in `labels_oir_total_ori.csv`.
 
 | Situation | Label | Why |
 |---|---|---|
-| Same recurring program, new cycle of the **same term** (2025 fall → 2026 fall), even when the wording is identical apart from the year | `UPDATE` | the validity period changed, so students of the new cycle must act on the new document |
-| Different term: fall vs spring (「秋季」「春季」), or a different semester (「第一學期」 vs 「第二學期」, 「上/下學期」, 「107-1」 vs 「107-2」). Note 第一學期 = fall, 第二學期 = spring | `NEW` | each term is its own call; if an older post of the *same* term exists, it is `UPDATE` of that one instead |
+| Same recurring program, new cycle (2025 → 2026 edition), even when the wording is identical apart from the year | `UPDATE` | the validity period changed, so students of the new cycle must act on the new document |
 | Pure re-post: same cycle, same content, maybe a typo fix or new formatting | `REDUNDANT` | |
 | Deadline extension or correction notice for an existing post (「延長」「更正」) | `UPDATE` | even though it only changes one field |
 | English and Chinese versions of the *same* announcement, same cycle | `REDUNDANT` | a translation, not a replacement |
-| Two different scholarships or schools that share a template | `NEW` | the false-UPDATE trap |
+| Two different scholarships or schools that share a template (e.g. 華語營志工 vs 國際學生接待志工) | `NEW` | the false-UPDATE trap |
 | Heavily reworded or restructured successor of the same program | `UPDATE` | the missed-UPDATE trap |
-| A list of names who got a scholarship, award or place (「獲獎名單」「錄取名單」) | `NEW` | the call is still valid for its own facts; results are new information |
-| Results of anything, even without names (「甄選結果」「放榜」「結果公告」), including the results of a second selection | `NEW` | results are new information |
-| Recruitment of any kind (「招募」「徵才」「誠徵」), including volunteer recruitment and its interview schedule (「面談時間」) | `NEW` | each recruitment is its own call for different people |
+| Results or name lists (「錄取名單」「獲獎名單」「甄選結果」「放榜」), including the results of a second selection | `NEW` | the call is still valid for its own facts; results are new information |
+| Job posting (「徵才」「誠徵」「約聘人員」) | `NEW` | each opening is a different position |
+| Next edition of the **recurring** volunteer recruitment (「國際學生接待志工招募」), its interview times (「面談時間」) and its admission list | `UPDATE` | the same program runs every term; target the previous edition of the same term |
 | An info session (「說明會」) about a program that has its own KB post | `NEW` | a separate event with its own date |
-| Next edition of a **recurring** info session, interview schedule or school-selection session of the same term (2024 session → 2025 session); recruitment excluded | `UPDATE` | same recurring event, new cycle |
-| Second or later selection round (「第二次甄選」「第三次甄選」「補甄選」) of the same call | `UPDATE` | a new application window replaces the old deadline |
-| Award or reward call (「獎勵」「獎助」) of the same category, posted again on a different page or for another session (「場次」「梯次」) | `UPDATE` | same award, the newer post is the one to act on |
-| A phase or stage (「第二階段」「第三階段」「phase」) | `NEW` | each phase is its own step with its own facts |
-| Numbered lecture or event in a series (「系列」「系列之二十八」) | `NEW` | each lecture is a different event |
+| Next edition of a **recurring** info session, sharing session (「分享會」「座談會」), interview schedule or school-selection schedule (2024 session → 2025 session) | `UPDATE` | same recurring event, new cycle |
+| Second selection round (「第二次甄選」) of the same call, or its interview order | `UPDATE` | a new application window replaces the old deadline |
+| Next stage (「第三階段」) of the same round, or the same stage of next year's edition | `UPDATE` | replaces the previous stage's notice |
+| A stage or program that has no earlier post | `NEW` | |
+| Numbered lecture in a series (「系列之二十八」) | `NEW` | each lecture is a different event |
 | Post with an empty body but the same title and cycle as an older post | `REDUNDANT` + `unsure` | nothing new is visible |
-| Several KB documents all match (e.g. 2023, 2024, 2025 editions) | `UPDATE` | target is the **most recent** one of the same term; the older ones were already superseded |
+| Several KB documents all match (e.g. 2023, 2024, 2025 editions) | `UPDATE` | target is the **most recent** one, preferring the same term (fall → fall, spring → spring) when both terms exist; the older ones were already superseded |
 | Matching predecessor exists in both zh and en | `UPDATE` | list both as `oir-10|oir-11`; either counts as correct |
 | Predecessor is more than 3 years old | label normally | note `old_predecessor` |
 | You cannot tell without opening an attachment the case does not include | best guess | put `unsure` in notes; these cases are excluded from the κ subset |
@@ -90,9 +87,8 @@ term win over the `UPDATE` rows. The one exception is a deadline extension or co
 - v1.1 (2026-09-30, before any human labeling): added the recurring-session, second-round,
   lecture-series and empty-body rows, which are decisions made while drafting
   `labels_oir_draft.csv`.
-- v2 (2026-10-22, after the team discussed all 200 cases into `labels_oir_total.csv`): added
-  the different-term, recruitment, results-without-names, phase and award rows, and the
-  precedence note; second selection rounds stay `UPDATE` but phases became `NEW`. 14 labels
-  changed to `NEW` (oir-004, 020, 051, 053, 059, 066, 068, 082, 091, 119, 165, 179, 189, 193),
-  2 targets lost their other-term documents (oir-065, oir-122), and 2 outdated reasons were
-  rewritten (oir-184, oir-197).
+- v2 (2026-10-22): rewritten to describe the team's discussed labels in
+  `labels_oir_total_ori.csv`: job postings are `NEW`; the recurring volunteer recruitment is
+  `UPDATE` of the previous same-term edition; the next stage of a round is `UPDATE`; the target
+  prefers the same term. A stricter draft of v2 (recruitment, phases and a different term all
+  `NEW`, applied in `labels_oir_total.csv`) was tried and dropped.

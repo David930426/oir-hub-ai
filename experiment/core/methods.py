@@ -241,31 +241,20 @@ IN_CHARS, CAND_CHARS = 2000, 700
 SYSTEM = """You maintain the knowledge base of a Taiwanese university's Office of International Relations.
 A new announcement has arrived. Decide what the ingestion pipeline must do with it.
 
-UPDATE    - it replaces information in an existing document: the same program, scholarship, event or rule
-            of the same term, but something a student acts on changed (new year, deadline, fee, quota,
-            eligibility, required documents, procedure, link). These are UPDATE:
-            - a new yearly edition of the same program and the same term (2025 fall -> 2026 fall)
-            - a deadline extension or correction notice (延長, 更正)
-            - a second or later selection round of the same call (第二次甄選, 補甄選)
-            - the same award or reward call posted again on another page or for another session (場次, 梯次)
-            - the next edition of a recurring info session or interview schedule of the same term
-NEW       - no existing document covers the same program/event/rule. These are NEW even when a similar
-            older document exists:
-            - a different term: fall vs spring (秋季/春季), or 1st vs 2nd semester (第一/第二學期,
-              上/下學期, 107-1/107-2)
-            - a list of names who got a scholarship, award or place (獲獎名單, 錄取名單)
-            - results of anything, even without names (結果, 放榜), including second-round results
-            - any recruitment (招募, 徵才, 誠徵), including volunteer recruitment and its interview times
-            - a phase or stage (第二階段, 第三階段)
-            - a numbered lecture or event in a series (系列)
-            - an info session (說明會) about a program that has its own announcement
-            - two different scholarships or schools that merely share a template
+UPDATE    - it replaces information in an existing document: the same program, scholarship, event or rule,
+            but something a student acts on changed (new cycle/semester/year, deadline, fee, quota,
+            eligibility, required documents, procedure, link). A new yearly edition is an UPDATE.
+            A deadline extension or correction notice (延長, 更正) is an UPDATE. So is a second selection
+            round (第二次甄選), the next stage of the same selection, and the next edition of a recurring
+            info session, sharing session, interview schedule or volunteer recruitment.
+NEW       - no existing document covers the same program/event/rule. Two different scholarships or schools
+            that merely share a template are different programs. Result and name lists (錄取名單, 獲獎名單,
+            甄選結果, 放榜), job postings (徵才) and numbered lectures in a series (系列) are NEW.
 REDUNDANT - an existing document already says the same thing for the same cycle (re-post, typo fix,
             or the English/Chinese translation of the same announcement).
-When an UPDATE rule and a NEW rule both apply, NEW wins - except a deadline extension or correction,
-which is always UPDATE.
 
-If several candidates are editions of the same program, the target is the most recent one.
+If several candidates are editions of the same program, the target is the most recent one, preferring the
+same term (fall or spring) as the new announcement.
 Write the rationale first (one or two sentences, English), then the label.
 target must be the candidate id (C1-C5) that is replaced or duplicated for UPDATE and REDUNDANT, and NONE for NEW."""
 
